@@ -1,4 +1,5 @@
 import os
+import re
 import xml.etree.ElementTree as etree
 
 import requests
@@ -55,31 +56,47 @@ class MavenPom:
 
     def _parser(self, content: str):
         root = etree.fromstring(content)
-        for node in root:
-            if node.tag == 'modelVersion':
-                self.model_version = node.text
-            elif node.tag == 'groupId':
-                self.group_id = node.text
-            elif node.tag == 'artifactId':
-                self.artifact_id = node.text
-            elif node.tag == 'version':
-                self.version = node.text
-            elif node.tag == 'packaging':
-                self.packaging = node.text
-            elif node.tag == 'dependencies':
-                for node1 in node:
-                    if node1.tag == 'dependency':
-                        for node2 in node1:
-                            depe = MavenDependency()
-                            if node.tag == 'groupId':
-                                depe.group_id = node2.text
-                            elif node.tag == 'artifactId':
-                                depe.artifact_id = node2.text
-                            elif node.tag == 'version':
-                                depe.version = node2.text
-                            elif node.tag == 'scope':
-                                depe.scope = node2.text
-                        self.dependencies.append(depe)
+        ns = ''
+        result = re.match(r'(\{.+\}).+', root.tag)
+        if result:
+            ns = result.group(1)
+        if root.tag != ns + 'project':
+            return
+        for node1 in root:
+            if node1.tag == ns + 'modelVersion':
+                self.model_version = node1.text
+            elif node1.tag == ns + 'groupId':
+                self.group_id = node1.text
+            elif node1.tag == ns + 'artifactId':
+                self.artifact_id = node1.text
+            elif node1.tag == ns + 'version':
+                self.version = node1.text
+            elif node1.tag == ns + 'packaging':
+                self.packaging = node1.text
+            elif node1.tag == ns + 'dependencies':
+                for node2 in node1:
+                    if node2.tag == ns + 'dependency':
+                        self._parser_artifact(ns, node2)
+            elif node1.tag == ns + 'dependencyManagement':
+                for node2 in node1:
+                    if node2.tag == ns + 'dependencies':
+                        for node3 in node2:
+                            if node3.tag == ns + 'dependency':
+                                self._parser_artifact(ns, node3)
+
+    def _parser_artifact(self, ns, node):
+        deps = MavenDependency()
+        for node1 in node:
+            if node1.tag == ns + 'groupId':
+                deps.group_id = node1.text
+            elif node1.tag == ns + 'artifactId':
+                deps.artifact_id = node1.text
+            elif node1.tag == ns + 'version':
+                deps.version = node1.text
+            elif node1.tag == ns + 'scope':
+                deps.scope = node1.text
+        if len(deps.group_id) > 0:
+            self.dependencies.append(deps)
 
 
 class Implementation:
@@ -161,8 +178,12 @@ if __name__ == '__main__':
 
     imple = Implementation('androidx.core:core-ktx:1.12.0')
     metadata_url = imple.maven_metadata_url()
-    response = requests.get(host + metadata_url)
-    if response.status_code == 200:
-        metadata = MavenMetadata(response.text)
+    metadata_resp = requests.get(host + metadata_url)
+    if metadata_resp.status_code == 200:
+        metadata = MavenMetadata(metadata_resp.text)
         pom_url = imple.maven_pom_url(metadata)
         print(host + pom_url)
+        pom_resp = requests.get(host + pom_url)
+        if pom_resp.status_code == 200:
+            pom = MavenPom(pom_resp.text)
+            print(pom)

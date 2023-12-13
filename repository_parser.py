@@ -1,5 +1,7 @@
+import calendar
 import os
 import re
+import time
 import xml.etree.ElementTree as etree
 
 import requests
@@ -137,11 +139,11 @@ class Implementation:
         self.root_dir = '/'.join(self.group_id.split('.')) + f'/{self.artifact_id}'
 
 
-def download_file(host, path):
+def download_file(host, local, path):
     print(f'download_file(), url = {host}{path}')
     response = requests.get(host + path)
     if response.status_code == 200:
-        local_path = maven_local_dir + path
+        local_path = local + path
         os.makedirs(os.path.dirname(local_path), exist_ok=True)
         with open(local_path, 'wb') as file:
             file.write(response.content)
@@ -156,54 +158,73 @@ class SyncImplementation:
         self.metadata = None
         self.pom = None
 
-    def sync_metadata(self, host) -> bool:
-        metadata_url = self.implementation.maven_metadata_path()
-        metadata_resp = download_file(host, metadata_url)
-        if metadata_resp:
-            self.metadata = MavenMetadata(metadata_resp.text)
-            return True
-        return False
+    def _sync_metadata(self, host, local):
+        metadata_path = self.implementation.maven_metadata_path()
+        metadata_text = ''
+        print('metadata_path = ' + metadata_path)
+        local_metadata = local + metadata_path
+        if os.path.exists(local_metadata):
+            modify_time = os.path.getmtime(local_metadata)
+            cur_time = time.time().real
+            if cur_time - modify_time > 10 * 60:
+                with open(local_metadata, 'r') as file:
+                    metadata_text = file.read()
+        if len(metadata_text) == 0:
+            metadata_resp = download_file(host, local, metadata_path)
+            if metadata_resp:
+                metadata_text = metadata_resp.text
+        if len(metadata_text) > 0:
+            self.metadata = MavenMetadata(metadata_text)
 
-    def _sync_pom(self, host):
-        if self.implementation:
-            pom_url = self.implementation.maven_pom_path(self.metadata)
-            pom_resp = download_file(host, pom_url)
-            if pom_resp:
-                self.pom = MavenPom(pom_resp.text)
-                for name in fingerprint:
-                    download_file(host, pom_url + '.' + name)
-
-    def sync_artifact(self, host):
-        pom_path = self.implementation.maven_pom_path(self.metadata)
-        if os.path.exists(maven_local_dir + pom_path):
+    def _sync_pom(self, host, local):
+        self._sync_metadata(host, local)
+        if not self.metadata:
             return
+        pom_path = self.implementation.maven_pom_path(self.metadata)
+        pom_text = ''
+        local_pom = local + pom_path
+        if os.path.exists(local_pom):
+            with open(local_pom, 'r') as file:
+                pom_text = file.read()
+        if len(pom_text) == 0:
+            pom_resp = download_file(host, local, pom_path)
+            if pom_resp:
+                pom_text = pom_resp.text
+                for name in fingerprint:
+                    download_file(host, local, pom_path + '.' + name)
+        if len(pom_text) > 0:
+            self.pom = MavenPom(pom_text)
 
-        self._sync_pom(host)
+    def sync_artifact(self, host, local):
+        self._sync_pom(host, local)
         if not self.pom:
             return
-
-        # artifact
-        artifact_url = self.pom.maven_artifact_path()
-        artifact_resp = download_file(host, artifact_url)
+        artifact_path = self.pom.maven_artifact_path()
+        local_artifact = local + artifact_path
+        if os.path.exists(local_artifact):
+            return
+        artifact_resp = download_file(host, local, artifact_path)
         if artifact_resp:
             for name in fingerprint:
-                download_file(host, artifact_url + '.' + name)
+                download_file(host, local, artifact_path + '.' + name)
             source_jar_url = self.pom.maven_source_jar_path()
-            source_jar_resp = download_file(host, source_jar_url)
+            source_jar_resp = download_file(host, local, source_jar_url)
             if source_jar_resp:
                 for name in fingerprint:
-                    download_file(host, source_jar_url + '.' + name)
+                    download_file(host, local, source_jar_url + '.' + name)
 
 
 def start_sync(path):
+    if path in paths:
+        return
+    paths.append(path)
     sync = SyncImplementation(path)
     for host in maven_hosts:
-        if sync.sync_metadata(host):
-            sync.sync_artifact(host)
-            if sync.pom:
-                for depe in sync.pom.dependencies:
-                    depe_path = depe.group_id + ':' + depe.artifact_id + ':' + depe.version
-                    start_sync(depe_path)
+        sync.sync_artifact(host, maven_local_dir)
+        if sync.pom:
+            for depe in sync.pom.dependencies:
+                depe_path = depe.group_id + ':' + depe.artifact_id + ':' + depe.version
+                start_sync(depe_path)
             break
 
 
@@ -213,4 +234,6 @@ if __name__ == '__main__':
                    'https://repo1.maven.org/maven2/',
                    'https://jcenter.bintray.com/']
     maven_local_dir = '.m/'
+
+    paths = []
     start_sync('androidx.core:core-ktx:1.12.0')

@@ -27,9 +27,9 @@ class MavenMetadata:
             elif node.tag == 'versioning':
                 for node1 in node:
                     if node1.tag == 'latest':
-                        self.latest_version = node1.text
+                        self.latest_version = node1.text.strip('[]')
                     elif node1.tag == 'release':
-                        self.release_version = node1.text
+                        self.release_version = node1.text.strip('[]')
                     elif node1.tag == 'versions':
                         for node2 in node1:
                             if node2.tag == 'version':
@@ -67,13 +67,13 @@ class MavenPom:
             return
         for node1 in root:
             if node1.tag == ns + 'modelVersion':
-                self.model_version = node1.text
+                self.model_version = node1.text.strip('[]')
             elif node1.tag == ns + 'groupId':
                 self.group_id = node1.text
             elif node1.tag == ns + 'artifactId':
                 self.artifact_id = node1.text
             elif node1.tag == ns + 'version':
-                self.version = node1.text
+                self.version = node1.text.strip('[]')
             elif node1.tag == ns + 'packaging':
                 self.packaging = node1.text
             elif node1.tag == ns + 'dependencies':
@@ -98,7 +98,7 @@ class MavenPom:
             elif node1.tag == ns + 'artifactId':
                 deps.artifact_id = node1.text
             elif node1.tag == ns + 'version':
-                deps.version = node1.text
+                deps.version = node1.text.strip('[]')
             elif node1.tag == ns + 'scope':
                 deps.scope = node1.text
         if len(deps.group_id) > 0:

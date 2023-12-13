@@ -156,11 +156,13 @@ class SyncImplementation:
         self.metadata = None
         self.pom = None
 
-    def _sync_metadata(self, host):
+    def sync_metadata(self, host) -> bool:
         metadata_url = self.implementation.maven_metadata_path()
         metadata_resp = download_file(host, metadata_url)
         if metadata_resp:
             self.metadata = MavenMetadata(metadata_resp.text)
+            return True
+        return False
 
     def _sync_pom(self, host):
         if self.implementation:
@@ -171,8 +173,7 @@ class SyncImplementation:
                 for name in fingerprint:
                     download_file(host, pom_url + '.' + name)
 
-    def start_sync(self, host):
-        self._sync_metadata(host)
+    def sync_artifact(self, host):
         pom_path = self.implementation.maven_pom_path(self.metadata)
         if os.path.exists(maven_local_dir + pom_path):
             return
@@ -196,15 +197,20 @@ class SyncImplementation:
 
 def start_sync(path):
     sync = SyncImplementation(path)
-    sync.start_sync(maven_host)
-    if sync.pom:
-        for depe in sync.pom.dependencies:
-            depe_path = depe.group_id + ':' + depe.artifact_id + ':' + depe.version
-            start_sync(depe_path)
+    for host in maven_hosts:
+        if sync.sync_metadata(host):
+            sync.sync_artifact(host)
+            if sync.pom:
+                for depe in sync.pom.dependencies:
+                    depe_path = depe.group_id + ':' + depe.artifact_id + ':' + depe.version
+                    start_sync(depe_path)
+            break
 
 
 if __name__ == '__main__':
     fingerprint = ['md5', 'sha1', 'sha256', 'sha512']
-    maven_host = 'https://dl.google.com/dl/android/maven2/'
+    maven_hosts = ['https://dl.google.com/dl/android/maven2/',
+                   'https://repo1.maven.org/maven2',
+                   'https://jcenter.bintray.com']
     maven_local_dir = '.m/'
     start_sync('androidx.core:core-ktx:1.12.0')

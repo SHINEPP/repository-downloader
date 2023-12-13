@@ -210,7 +210,7 @@ def start_sync(path):
 if __name__ == '__main__':
     fingerprint = ['md5', 'sha1', 'sha256', 'sha512']
     maven_hosts = ['https://dl.google.com/dl/android/maven2/',
-                   'https://repo1.maven.org/maven2',
-                   'https://jcenter.bintray.com']
+                   'https://repo1.maven.org/maven2/',
+                   'https://jcenter.bintray.com/']
     maven_local_dir = '.m/'
     start_sync('androidx.core:core-ktx:1.12.0')

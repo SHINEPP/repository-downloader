@@ -84,6 +84,8 @@ class MavenPom:
                         for node3 in node2:
                             if node3.tag == ns + 'dependency':
                                 self._parser_artifact(ns, node3)
+        if len(self.packaging) == 0:
+            self.packaging = 'jar'
         self.root_dir = '/'.join(self.group_id.split('.')) + f'/{self.artifact_id}/{self.version}'
 
     def _parser_artifact(self, ns, node):

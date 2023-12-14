@@ -65,6 +65,10 @@ class MavenPom:
             ns = result.group(1)
         if root.tag != ns + 'project':
             return
+
+        parent_group_id = ''
+        parent_artifact_id = ''
+        parent_version = ''
         for node1 in root:
             if node1.tag == ns + 'modelVersion':
                 self.model_version = node1.text.strip('[]')
@@ -76,6 +80,14 @@ class MavenPom:
                 self.version = node1.text.strip('[]')
             elif node1.tag == ns + 'packaging':
                 self.packaging = node1.text
+            elif node1.tag == ns + 'parent':
+                for node2 in node1:
+                    if node2.tag == ns + 'groupId':
+                        parent_group_id = node2.text.strip('[]')
+                    elif node2.tag == ns + 'artifactId':
+                        parent_artifact_id = node2.text.strip('[]')
+                    elif node2.tag == ns + 'version':
+                        parent_version = node2.text.strip('[]')
             elif node1.tag == ns + 'dependencies':
                 for node2 in node1:
                     if node2.tag == ns + 'dependency':
@@ -88,6 +100,12 @@ class MavenPom:
                                 self._parser_artifact(ns, node3)
         if len(self.packaging) == 0:
             self.packaging = 'jar'
+        if len(self.group_id) == 0:
+            self.group_id = parent_group_id
+        if len(self.artifact_id) == 0:
+            self.artifact_id = parent_artifact_id
+        if len(self.version) == 0:
+            self.version = parent_version
         self.root_dir = '/'.join(self.group_id.split('.')) + f'/{self.artifact_id}/{self.version}'
 
     def _parser_artifact(self, ns, node):
@@ -161,7 +179,6 @@ class SyncImplementation:
     def _sync_metadata(self, host, local):
         metadata_path = self.implementation.maven_metadata_path()
         metadata_text = ''
-        print('metadata_path = ' + metadata_path)
         local_metadata = local + metadata_path
         if os.path.exists(local_metadata):
             modify_time = os.path.getmtime(local_metadata)
@@ -195,14 +212,14 @@ class SyncImplementation:
         if len(pom_text) > 0:
             self.pom = MavenPom(pom_text)
 
-    def sync_artifact(self, host, local):
+    def sync_artifact(self, host, local) -> bool:
         self._sync_pom(host, local)
         if not self.pom:
-            return
+            return False
         artifact_path = self.pom.maven_artifact_path()
         local_artifact = local + artifact_path
         if os.path.exists(local_artifact):
-            return
+            return True
         artifact_resp = download_file(host, local, artifact_path)
         if artifact_resp:
             for name in fingerprint:
@@ -212,6 +229,8 @@ class SyncImplementation:
             if source_jar_resp:
                 for name in fingerprint:
                     download_file(host, local, source_jar_url + '.' + name)
+            return True
+        return False
 
 
 def start_sync(path):
@@ -220,8 +239,7 @@ def start_sync(path):
     paths.append(path)
     sync = SyncImplementation(path)
     for host in maven_hosts:
-        sync.sync_artifact(host, maven_local_dir)
-        if sync.pom:
+        if sync.sync_artifact(host, maven_local_dir):
             for depe in sync.pom.dependencies:
                 depe_path = depe.group_id + ':' + depe.artifact_id + ':' + depe.version
                 start_sync(depe_path)

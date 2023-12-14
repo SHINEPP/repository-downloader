@@ -1,4 +1,3 @@
-import calendar
 import os
 import re
 import time
@@ -158,14 +157,16 @@ class Implementation:
 
 
 def download_file(host, local, path):
-    print(f'download_file(), url = {host}{path}')
+    print(f'download: {host}{path}', end='')
     response = requests.get(host + path)
     if response.status_code == 200:
         local_path = local + path
         os.makedirs(os.path.dirname(local_path), exist_ok=True)
         with open(local_path, 'wb') as file:
             file.write(response.content)
+            print(' -> success')
         return response
+    print(' -> fail')
     return None
 
 
@@ -236,6 +237,7 @@ class SyncImplementation:
 def start_sync(path):
     if path in paths:
         return
+    print(f'sync: {path}')
     paths.append(path)
     sync = SyncImplementation(path)
     for host in maven_hosts:
@@ -255,3 +257,4 @@ if __name__ == '__main__':
 
     paths = []
     start_sync('androidx.core:core-ktx:1.12.0')
+    start_sync('com.squareup.okhttp3:okhttp:4.11.0')

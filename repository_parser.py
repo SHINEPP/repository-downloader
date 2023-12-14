@@ -46,7 +46,8 @@ class MavenDependency:
 
 
 class MavenPom:
-    def __init__(self, content: str):
+    def __init__(self, implementation, content: str):
+        self.implementation = implementation
         self.model_version = ''
         self.group_id = ''
         self.artifact_id = ''
@@ -99,12 +100,20 @@ class MavenPom:
                                 self._parser_artifact(ns, node3)
         if len(self.packaging) == 0:
             self.packaging = 'jar'
+
         if len(self.group_id) == 0:
             self.group_id = parent_group_id
         if len(self.artifact_id) == 0:
             self.artifact_id = parent_artifact_id
         if len(self.version) == 0:
             self.version = parent_version
+
+        if len(self.group_id) == 0:
+            self.group_id = self.implementation.group_id
+        if len(self.artifact_id) == 0:
+            self.artifact_id = self.implementation.artifact_id
+        if len(self.version) == 0:
+            self.version = self.implementation.version
         self.root_dir = '/'.join(self.group_id.split('.')) + f'/{self.artifact_id}/{self.version}'
 
     def _parser_artifact(self, ns, node):
@@ -211,7 +220,7 @@ class SyncImplementation:
                 for name in fingerprint:
                     download_file(host, local, pom_path + '.' + name)
         if len(pom_text) > 0:
-            self.pom = MavenPom(pom_text)
+            self.pom = MavenPom(self.implementation, pom_text)
 
     def sync_artifact(self, host, local) -> bool:
         self._sync_pom(host, local)

@@ -265,6 +265,4 @@ if __name__ == '__main__':
     maven_local_dir = '.m/'
 
     paths = []
-    start_sync('androidx.core:core-ktx:1.12.0')
-    start_sync('com.squareup.okhttp3:okhttp:4.11.0')
-    start_sync('com.google.android.gms:play-services-ads-identifier:18.0.1')
+    start_sync('com.google.ads.mediation:mintegral:16.5.21.0')

@@ -1,0 +1,109 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.oh.bb.mmkv",
+    "module": "develop-gp",
+    "version": "9.5.1",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.2"
+    }
+  },
+  "variants": [
+    {
+      "name": "releaseApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "dependencies": [
+        {
+          "group": "androidx.core",
+          "module": "core-ktx",
+          "version": {
+            "requires": "1.12.0"
+          }
+        },
+        {
+          "group": "androidx.appcompat",
+          "module": "appcompat",
+          "version": {
+            "requires": "1.6.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib-jdk8",
+          "version": {
+            "requires": "1.8.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "develop-gp-9.5.1.aar",
+          "url": "develop-gp-9.5.1.aar",
+          "size": 9336,
+          "sha512": "d41b6e7dd1343e607f9824e91a4f49bb5ccb810ef7d71ee7928b458a8cd22f639a9c4b3e267e81bf1f25b77a2b2ed3d1df9a51617e5af58bac571ce781312364",
+          "sha256": "5ecb66f469dcf729bd9ac834238e395ae1d7875172a203210542259573736eb2",
+          "sha1": "d3f62bb10cb69ab8fa1253166c5cd64a629d3374",
+          "md5": "e1f7ff630c373a5a3209961241512629"
+        }
+      ]
+    },
+    {
+      "name": "releaseRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "dependencies": [
+        {
+          "group": "com.tencent",
+          "module": "mmkv-static",
+          "version": {
+            "requires": "1.2.16"
+          }
+        },
+        {
+          "group": "androidx.core",
+          "module": "core-ktx",
+          "version": {
+            "requires": "1.12.0"
+          }
+        },
+        {
+          "group": "androidx.appcompat",
+          "module": "appcompat",
+          "version": {
+            "requires": "1.6.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib-jdk8",
+          "version": {
+            "requires": "1.8.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "develop-gp-9.5.1.aar",
+          "url": "develop-gp-9.5.1.aar",
+          "size": 9336,
+          "sha512": "d41b6e7dd1343e607f9824e91a4f49bb5ccb810ef7d71ee7928b458a8cd22f639a9c4b3e267e81bf1f25b77a2b2ed3d1df9a51617e5af58bac571ce781312364",
+          "sha256": "5ecb66f469dcf729bd9ac834238e395ae1d7875172a203210542259573736eb2",
+          "sha1": "d3f62bb10cb69ab8fa1253166c5cd64a629d3374",
+          "md5": "e1f7ff630c373a5a3209961241512629"
+        }
+      ]
+    }
+  ]
+}

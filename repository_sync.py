@@ -187,8 +187,8 @@ class GradleImplementation:
     Gradle Implementation解析
     """
 
-    def __init__(self, path):
-        self.path = path
+    def __init__(self, value):
+        self.value = value
         self.group_id = ''
         self.artifact_id = ''
         self.version = ''
@@ -196,7 +196,7 @@ class GradleImplementation:
         self._parser()
 
     def _parser(self):
-        self.group_id, self.artifact_id, self.version = self.path.split(":")
+        self.group_id, self.artifact_id, self.version = self.value.split(":")
         self.root_dir = os.sep.join(self.group_id.split('.') + [self.artifact_id])
 
     def maven_metadata_path(self):
@@ -224,10 +224,10 @@ class ImplementationSyncer:
         self.metadata = None
         self.pom = None
 
-    def _sync_metadata(self, host, store_dir):
+    def _sync_metadata(self, host, store_dir: str):
         metadata_path = self.implementation.maven_metadata_path()
         metadata_text = ''
-        local_metadata = store_dir + metadata_path
+        local_metadata = os.path.join(store_dir, metadata_path)
         if os.path.exists(local_metadata):
             modify_time = os.path.getmtime(local_metadata)
             cur_time = time.time().real
@@ -243,7 +243,7 @@ class ImplementationSyncer:
         if len(metadata_text) > 0:
             self.metadata = MavenMetadata(metadata_text)
 
-    def _sync_pom(self, host, store_dir):
+    def _sync_pom(self, host, store_dir: str):
         self._sync_metadata(host, store_dir)
         if not self.metadata:
             return
@@ -262,7 +262,7 @@ class ImplementationSyncer:
         if len(pom_text) > 0:
             self.pom = MavenPom(self.implementation, pom_text)
 
-    def sync_artifact(self, host, store_dir) -> bool:
+    def sync_artifact(self, host, store_dir: str) -> bool:
         self._sync_pom(host, store_dir)
         if not self.pom:
             return False
@@ -290,7 +290,7 @@ class Syncer:
         self.store_dir = store_dir
         self.sync_depe = sync_depe
 
-    def sync(self, path):
+    def sync(self, path: str):
         if path in self.paths:
             return
         print(f'sync: {path}')

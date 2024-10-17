@@ -73,7 +73,6 @@ def upload_aar():
 
     # 通过 HTTP POST 上传 AAR 文件
     response = requests.post(upload_repository_url, files=files, auth=HTTPBasicAuth(username, password))
-
     print(f'code: {response.status_code}, {response.text}')
 
 

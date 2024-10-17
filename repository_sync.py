@@ -307,12 +307,13 @@ class Syncer:
 
 if __name__ == '__main__':
     maven_hosts = [
-        {'uri': 'https://dl.google.com/dl/android/maven2/'},
-        {'uri': 'https://repo1.maven.org/maven2/'},
-        {'uri': 'https://jcenter.bintray.com/'},
-        {'uri': 'https://jitpack.io/'},
-        {'uri': 'https://maven.aliyun.com/repository/google/'},
-        {'uri': 'https://maven.aliyun.com/repository/public/'},
+        # {'uri': 'https://dl.google.com/dl/android/maven2/'},
+        # {'uri': 'https://repo1.maven.org/maven2/'},
+        # {'uri': 'https://jcenter.bintray.com/'},
+        # {'uri': 'https://jitpack.io/'},
+        # {'uri': 'https://maven.aliyun.com/repository/google/'},
+        # {'uri': 'https://maven.aliyun.com/repository/public/'},
+        {'uri': 'https://maven.scijava.org/content/repositories/public/'},
         {
             'uri': 'https://maven.cherrysoft.cn/repository/maven-releases/',
             'credentials': {
@@ -324,8 +325,6 @@ if __name__ == '__main__':
 
     syncer = Syncer(hosts=maven_hosts, store_dir='.m', sync_depe=False)
     syncer.sync('eu.davidea:flexible-adapter:5.1.0')
-
-    # start_sync('eu.davidea:flexible-adapter:5.1.0', sync_den=False)
-    # start_sync('eu.davidea:flexible-adapter-ui:1.0.0')
-    # start_sync('eu.davidea:flexible-adapter-livedata:1.0.0-b3')
-    # start_sync('eu.davidea:flexible-adapter-databinding:1.0.0')
+    syncer.sync('eu.davidea:flexible-adapter-ui:1.0.0')
+    syncer.sync('eu.davidea:flexible-adapter-livedata:1.0.0-b3')
+    syncer.sync('eu.davidea:flexible-adapter-databinding:1.0.0')

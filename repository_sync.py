@@ -307,13 +307,16 @@ class Syncer:
 
 if __name__ == '__main__':
     maven_hosts = [
-        # {'uri': 'https://dl.google.com/dl/android/maven2/'},
-        # {'uri': 'https://repo1.maven.org/maven2/'},
-        # {'uri': 'https://jcenter.bintray.com/'},
-        # {'uri': 'https://jitpack.io/'},
-        # {'uri': 'https://maven.aliyun.com/repository/google/'},
-        # {'uri': 'https://maven.aliyun.com/repository/public/'},
         {'uri': 'https://maven.scijava.org/content/repositories/public/'},
+        {'uri': 'https://dl.google.com/dl/android/maven2/'},
+        {'uri': 'https://repo1.maven.org/maven2/'},
+        {'uri': 'https://jcenter.bintray.com/'},
+        {'uri': 'https://jitpack.io/'},
+        {'uri': 'https://maven.aliyun.com/repository/google/'},
+        {'uri': 'https://maven.aliyun.com/repository/public/'},
+        {'uri': 'https://maven.scijava.org/content/repositories/public/'},
+        {'uri': 'https://jfrog.anythinktech.com/artifactory/overseas_sdk'},
+        {'uri': 'https://dl-maven-android.mintegral.com/repository/mbridge_android_sdk_oversea'},
         {
             'uri': 'https://maven.cherrysoft.cn/repository/maven-releases/',
             'credentials': {
@@ -324,7 +327,4 @@ if __name__ == '__main__':
     ]
 
     syncer = Syncer(hosts=maven_hosts, store_dir='.m', sync_depe=False)
-    syncer.sync('eu.davidea:flexible-adapter:5.1.0')
-    syncer.sync('eu.davidea:flexible-adapter-ui:1.0.0')
-    syncer.sync('eu.davidea:flexible-adapter-livedata:1.0.0-b3')
-    syncer.sync('eu.davidea:flexible-adapter-databinding:1.0.0')
+    syncer.sync('com.anythink.sdk:interstitial-tpn:6.4.17')

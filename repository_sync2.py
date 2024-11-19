@@ -6,20 +6,21 @@ import time
 import xml.etree.ElementTree as etree
 
 import requests
+from requests import Response
 from requests.auth import HTTPBasicAuth
 
 fingerprint = ['md5', 'sha1', 'sha256', 'sha512']
 
 
-def maven_download_file(host: dict, store_dir: str, path: str):
+def maven_download_file(host: dict, store_dir: str, relative_path: str) -> Response | None:
     """
     下载maven仓库中文件
     :param host: maven仓库源信息
     :param store_dir: 本地存储根目录
-    :param path: 文件相对地址
+    :param relative_path: 文件相对地址
     :return: Response | None
     """
-    print(f'download: {host["uri"]}{path}', end='')
+    print(f'download: {host["uri"]}{relative_path}', end='')
     auth = None
     if 'credentials' in host.keys():
         credentials = host['credentials']
@@ -29,16 +30,33 @@ def maven_download_file(host: dict, store_dir: str, path: str):
             password = credentials['password']
             if username and password:
                 auth = HTTPBasicAuth(username, password)
-    response = requests.get(os.path.join(host['uri'], path), auth=auth)
+
+    response = requests.get(os.path.join(host['uri'], relative_path), auth=auth)
+    success = False
     if response.status_code == 200:
-        local_path = os.path.join(store_dir, path)
+        local_path = os.path.join(store_dir, relative_path)
         os.makedirs(os.path.dirname(local_path), exist_ok=True)
         with open(local_path, 'wb') as file:
             file.write(response.content)
-            print(' -> success')
+            success = True
+
+    if success:
+        print(' -> success')
         return response
-    print(' -> fail')
-    return None
+    else:
+        print(' -> fail')
+        return None
+
+
+def maven_download_files(host: dict, store_dir: str, relative_path: str) -> Response | None:
+    """
+    下载maven仓库中文件和md5, sha1, sha256, sh512
+    """
+    response = maven_download_file(host, store_dir, relative_path)
+    if response:
+        for name in fingerprint:
+            maven_download_file(host, store_dir, relative_path + '.' + name)
+    return response
 
 
 class MavenMetadata:
@@ -49,6 +67,7 @@ class MavenMetadata:
     def __init__(self, content: str):
         self.group_id = ''
         self.artifact_id = ''
+        self.version = ''
         self.latest_version = ''
         self.release_version = ''
         self.versions = []
@@ -57,23 +76,29 @@ class MavenMetadata:
 
     def _parser(self, content: str):
         root = etree.fromstring(content)
+        assert root.tag == 'metadata'
         for node in root:
+            text = node.text.strip()
             if node.tag == 'groupId':
-                self.group_id = node.text
+                self.group_id = text
             elif node.tag == 'artifactId':
-                self.artifact_id = node.text
+                self.artifact_id = text
+            elif node.tag == 'version':
+                self.version = text
             elif node.tag == 'versioning':
                 for node1 in node:
+                    text1 = node1.text.strip()
                     if node1.tag == 'latest':
-                        self.latest_version = node1.text.strip('[]')
+                        self.latest_version = text1.strip('[]')
                     elif node1.tag == 'release':
-                        self.release_version = node1.text.strip('[]')
+                        self.release_version = text1.strip('[]')
                     elif node1.tag == 'versions':
                         for node2 in node1:
+                            text2 = node2.text.strip()
                             if node2.tag == 'version':
-                                self.versions.append(node2.text.strip('[]'))
+                                self.versions.append(text2.strip('[]'))
                     elif node1.tag == 'lastUpdated':
-                        self.last_updated = node1.text
+                        self.last_updated = text1
 
 
 class MavenDependency:
@@ -223,15 +248,15 @@ class GradleImplementation:
     def maven_metadata_path(self):
         return os.path.join(self.root_dir, 'maven-metadata.xml')
 
-    def maven_pom_path(self, metadata: MavenMetadata):
+    def maven_pom_path(self, metadata: MavenMetadata | None = None):
         version = ''
-        if len(self.version) == 0:
+        if len(self.version) > 0:
+            version = self.version
+        elif metadata:
             if len(metadata.release_version) > 0:
                 version = metadata.release_version
             elif len(metadata.latest_version) > 0:
                 version = metadata.latest_version
-        else:
-            version = self.version
         return os.sep.join([self.root_dir, version, self.artifact_id + '-' + version + '.pom'])
 
 
@@ -256,11 +281,9 @@ class ImplementationSyncer:
                 with open(local_metadata, 'r') as file:
                     metadata_text = file.read()
         if len(metadata_text) == 0:
-            metadata_resp = maven_download_file(host, store_dir, metadata_path)
+            metadata_resp = maven_download_files(host, store_dir, metadata_path)
             if metadata_resp:
                 metadata_text = metadata_resp.text
-                for name in fingerprint:
-                    maven_download_file(host, store_dir, metadata_path + '.' + name)
         if len(metadata_text) > 0:
             self.metadata = MavenMetadata(metadata_text)
 
@@ -275,11 +298,9 @@ class ImplementationSyncer:
             with open(local_pom, 'r') as file:
                 pom_text = file.read()
         if len(pom_text) == 0:
-            pom_resp = maven_download_file(host, store_dir, pom_path)
+            pom_resp = maven_download_files(host, store_dir, pom_path)
             if pom_resp:
                 pom_text = pom_resp.text
-                for name in fingerprint:
-                    maven_download_file(host, store_dir, pom_path + '.' + name)
         if len(pom_text) > 0:
             self.pom = MavenPom(self.implementation, pom_text)
 
@@ -291,15 +312,10 @@ class ImplementationSyncer:
         local_artifact = os.path.join(store_dir, artifact_path)
         if os.path.exists(local_artifact):
             return True
-        artifact_resp = maven_download_file(host, store_dir, artifact_path)
+        artifact_resp = maven_download_files(host, store_dir, artifact_path)
         if artifact_resp:
-            for name in fingerprint:
-                maven_download_file(host, store_dir, artifact_path + '.' + name)
             source_jar_url = self.pom.maven_source_jar_path()
-            source_jar_resp = maven_download_file(host, store_dir, source_jar_url)
-            if source_jar_resp:
-                for name in fingerprint:
-                    maven_download_file(host, store_dir, source_jar_url + '.' + name)
+            maven_download_files(host, store_dir, source_jar_url)
             return True
         return False
 
@@ -343,12 +359,5 @@ if __name__ == '__main__':
         }
     ]
 
-    syncer = Syncer(hosts=maven_hosts, store_dir='.m', sync_depe=True)
-    syncer.sync('com.google.code.gson:gson:2.8.9')
-    syncer.sync('com.github.Harbor2:emlibrary:v2.2.4')
-    syncer.sync('org.greenrobot:eventbus:3.2.0')
-    syncer.sync('com.airbnb.android:lottie:6.1.0')
-    syncer.sync('jp.wasabeef:glide-transformations:4.3.0')
-    syncer.sync('com.github.bumptech.glide:glide:4.15.1')
-    syncer.sync('eu.davidea:flexible-adapter-ui:1.0.0')
-    syncer.sync('eu.davidea:flexible-adapter:5.1.0')
+    syncer = Syncer(hosts=maven_hosts, store_dir='.m', sync_depe=False)
+    syncer.sync('net.bytebuddy:byte-buddy-agent:1.15.10')

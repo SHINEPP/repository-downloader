@@ -48,14 +48,17 @@ def maven_download_file(host: dict, store_dir: str, relative_path: str) -> Respo
         return None
 
 
-def maven_download_files(host: dict, store_dir: str, relative_path: str) -> Response | None:
+def maven_download_files(hosts: list, store_dir: str, relative_path: str) -> Response | None:
     """
     下载maven仓库中文件和md5, sha1, sha256, sh512
     """
-    response = maven_download_file(host, store_dir, relative_path)
-    if response:
-        for name in fingerprint:
-            maven_download_file(host, store_dir, relative_path + '.' + name)
+    response = None
+    for host in hosts:
+        response = maven_download_file(host, store_dir, relative_path)
+        if response:
+            for name in fingerprint:
+                maven_download_file(host, store_dir, relative_path + '.' + name)
+            break
     return response
 
 
@@ -64,7 +67,10 @@ class MavenMetadata:
     Maven Metadata 解析
     """
 
-    def __init__(self, content: str):
+    def __init__(self, hosts: list, store_dir: str, metadata_path: str):
+        self.hosts = hosts
+        self.store_dir = store_dir
+        self.metadata_path = metadata_path
         self.group_id = ''
         self.artifact_id = ''
         self.version = ''
@@ -72,9 +78,27 @@ class MavenMetadata:
         self.release_version = ''
         self.versions = []
         self.last_updated = ''
-        self._parser(content)
 
-    def _parser(self, content: str):
+    def sync(self) -> bool:
+        metadata_text = ''
+        local_metadata = os.path.join(self.store_dir, self.metadata_path)
+        if os.path.exists(local_metadata):
+            modify_time = os.path.getmtime(local_metadata)
+            cur_time = time.time().real
+            if cur_time - modify_time > 10 * 60:
+                with open(local_metadata, 'r') as file:
+                    metadata_text = file.read()
+        if len(metadata_text) == 0:
+            metadata_resp = maven_download_files(self.hosts, self.store_dir, self.metadata_path)
+            if metadata_resp:
+                metadata_text = metadata_resp.text
+        if len(metadata_text) > 0:
+            self._parser_metadata(metadata_text)
+            return True
+        else:
+            return False
+
+    def _parser_metadata(self, content: str):
         root = etree.fromstring(content)
         assert root.tag == 'metadata'
         for node in root:
@@ -118,7 +142,9 @@ class MavenPom:
     Maven Pom文件信息&处理
     """
 
-    def __init__(self, implementation, content: str):
+    def __init__(self, hosts: list, store_dir: str, implementation: MavenImplementation):
+        self.hosts = hosts
+        self.store_dir = store_dir
         self.implementation = implementation
         self.model_version = ''
         self.group_id = ''
@@ -129,7 +155,22 @@ class MavenPom:
         self.dependencies: list[MavenDependency] = []
         self.parent: MavenPom | None = None
         self.properties = {str: str}
-        self._parser(content)
+
+    def sync(self, pom_path: str) -> bool:
+        pom_text = ''
+        local_pom = os.path.join(self.store_dir, pom_path)
+        if os.path.exists(local_pom):
+            with open(local_pom, 'r') as file:
+                pom_text = file.read()
+        if len(pom_text) == 0:
+            pom_resp = maven_download_files(self.hosts, self.store_dir, pom_path)
+            if pom_resp:
+                pom_text = pom_resp.text
+        if len(pom_text) > 0:
+            self._parser(pom_text)
+            return True
+        else:
+            return False
 
     def _parser(self, content: str):
         root = etree.fromstring(content)
@@ -228,94 +269,58 @@ class MavenPom:
         return os.path.join(self.root_dir, self.artifact_id + '-' + self.version + '-sources.jar')
 
 
-class GradleImplementation:
+class MavenImplementation:
     """
-    Gradle Implementation解析
+    Maven Implementation解析
     """
 
-    def __init__(self, value):
+    def __init__(self, hosts: list, store_dir: str, value: str):
+        self.hosts = hosts
+        self.store_dir = store_dir
         self.value = value
         self.group_id = ''
         self.artifact_id = ''
         self.version = ''
         self.root_dir = ''
+        self.metadata_path = ''
+        self.metadata: MavenMetadata | None = None
+        self.pom: MavenPom | None = None
         self._parser()
 
     def _parser(self):
         self.group_id, self.artifact_id, self.version = self.value.split(":")
         self.root_dir = os.sep.join(self.group_id.split('.') + [self.artifact_id])
+        self.metadata_path = os.path.join(self.root_dir, 'maven-metadata.xml')
 
-    def maven_metadata_path(self):
-        return os.path.join(self.root_dir, 'maven-metadata.xml')
+    def sync(self):
+        self.metadata = MavenMetadata(self.hosts, self.store_dir, self.metadata_path)
+        self.metadata.sync()
+        self.pom = MavenPom(self.hosts, self.store_dir, self)
+        self.pom.sync(self._pom_path())
+        self._sync_artifact()
 
-    def maven_pom_path(self, metadata: MavenMetadata | None = None):
+    def _pom_path(self):
         version = ''
         if len(self.version) > 0:
             version = self.version
-        elif metadata:
-            if len(metadata.release_version) > 0:
-                version = metadata.release_version
-            elif len(metadata.latest_version) > 0:
-                version = metadata.latest_version
+        elif self.metadata:
+            if len(self.metadata.release_version) > 0:
+                version = self.metadata.release_version
+            elif len(self.metadata.latest_version) > 0:
+                version = self.metadata.latest_version
         return os.sep.join([self.root_dir, version, self.artifact_id + '-' + version + '.pom'])
 
-
-class ImplementationSyncer:
-    """
-    Gradle Implementation Sync
-    """
-
-    def __init__(self, path):
-        self.implementation = GradleImplementation(path)
-        self.metadata = None
-        self.pom = None
-
-    def _sync_metadata(self, host, store_dir: str):
-        metadata_path = self.implementation.maven_metadata_path()
-        metadata_text = ''
-        local_metadata = os.path.join(store_dir, metadata_path)
-        if os.path.exists(local_metadata):
-            modify_time = os.path.getmtime(local_metadata)
-            cur_time = time.time().real
-            if cur_time - modify_time > 10 * 60:
-                with open(local_metadata, 'r') as file:
-                    metadata_text = file.read()
-        if len(metadata_text) == 0:
-            metadata_resp = maven_download_files(host, store_dir, metadata_path)
-            if metadata_resp:
-                metadata_text = metadata_resp.text
-        if len(metadata_text) > 0:
-            self.metadata = MavenMetadata(metadata_text)
-
-    def _sync_pom(self, host, store_dir: str):
-        self._sync_metadata(host, store_dir)
-        if not self.metadata:
-            return
-        pom_path = self.implementation.maven_pom_path(self.metadata)
-        pom_text = ''
-        local_pom = os.path.join(store_dir, pom_path)
-        if os.path.exists(local_pom):
-            with open(local_pom, 'r') as file:
-                pom_text = file.read()
-        if len(pom_text) == 0:
-            pom_resp = maven_download_files(host, store_dir, pom_path)
-            if pom_resp:
-                pom_text = pom_resp.text
-        if len(pom_text) > 0:
-            self.pom = MavenPom(self.implementation, pom_text)
-
-    def sync_artifact(self, host, store_dir: str) -> bool:
-        self._sync_pom(host, store_dir)
+    def _sync_artifact(self) -> bool:
         if not self.pom:
             return False
         artifact_path = self.pom.maven_artifact_path()
-        local_artifact = os.path.join(store_dir, artifact_path)
+        local_artifact = os.path.join(self.store_dir, artifact_path)
         if os.path.exists(local_artifact):
             return True
-        artifact_resp = maven_download_files(host, store_dir, artifact_path)
+        artifact_resp = maven_download_files(self.hosts, self.store_dir, artifact_path)
         if artifact_resp:
             source_jar_url = self.pom.maven_source_jar_path()
-            maven_download_files(host, store_dir, source_jar_url)
+            maven_download_files(self.hosts, self.store_dir, source_jar_url)
             return True
         return False
 
@@ -328,14 +333,12 @@ class Syncer:
 
     def sync(self, path: str):
         print(f'sync: {path}')
-        sync = ImplementationSyncer(path)
-        for host in self.hosts:
-            if sync.sync_artifact(host, self.store_dir):
-                if self.sync_depe:
-                    for depe in sync.pom.dependencies:
-                        depe_path = ":".join([depe.group_id, depe.artifact_id, depe.version])
-                        self.sync(depe_path)
-                break
+        impl = MavenImplementation(self.hosts, self.store_dir, path)
+        impl.sync()
+        for depe in impl.pom.dependencies:
+            depe_path = ":".join([depe.group_id, depe.artifact_id, depe.version])
+            self.sync(depe_path)
+            break
 
 
 if __name__ == '__main__':
@@ -360,4 +363,11 @@ if __name__ == '__main__':
     ]
 
     syncer = Syncer(hosts=maven_hosts, store_dir='.m', sync_depe=False)
-    syncer.sync('net.bytebuddy:byte-buddy-agent:1.15.10')
+    syncer.sync('com.google.code.gson:gson:2.8.9')
+    syncer.sync('com.github.Harbor2:emlibrary:v2.2.4')
+    syncer.sync('org.greenrobot:eventbus:3.2.0')
+    syncer.sync('com.airbnb.android:lottie:6.1.0')
+    syncer.sync('jp.wasabeef:glide-transformations:4.3.0')
+    syncer.sync('com.github.bumptech.glide:glide:4.15.1')
+    syncer.sync('eu.davidea:flexible-adapter-ui:1.0.0')
+    syncer.sync('eu.davidea:flexible-adapter:5.1.0')

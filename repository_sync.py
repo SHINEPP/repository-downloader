@@ -326,5 +326,12 @@ if __name__ == '__main__':
         }
     ]
 
-    syncer = Syncer(hosts=maven_hosts, store_dir='.m', sync_depe=False)
-    syncer.sync('com.anythink.sdk:interstitial-tpn:6.4.17')
+    syncer = Syncer(hosts=maven_hosts, store_dir='.m', sync_depe=True)
+    syncer.sync('com.google.code.gson:gson:2.8.9')
+    syncer.sync('com.github.Harbor2:emlibrary:v2.2.4')
+    syncer.sync('org.greenrobot:eventbus:3.2.0')
+    syncer.sync('com.airbnb.android:lottie:6.1.0')
+    syncer.sync('jp.wasabeef:glide-transformations:4.3.0')
+    syncer.sync('com.github.bumptech.glide:glide:4.15.1')
+    syncer.sync('eu.davidea:flexible-adapter-ui:1.0.0')
+    syncer.sync('eu.davidea:flexible-adapter:5.1.0')

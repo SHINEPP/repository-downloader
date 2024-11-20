@@ -1,0 +1,68 @@
+Google Repository
+https://maven.google.com/
+
+JCenter
+https://jcenter.bintray.com/
+
+Central
+https://repo1.maven.org/maven2/
+
+KotlinDev
+https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev/
+
+Atlassian
+https://packages.atlassian.com/mvn/maven-atlassian-external/
+
+WSO2 Releases
+https://maven.wso2.org/nexus/content/repositories/releases/
+
+Hortonworks
+https://repo.hortonworks.com/content/repositories/releases/
+
+Sonatype
+https://oss.sonatype.org/content/repositories/releases/
+
+WSO2 Public
+https://maven.wso2.org/nexus/content/repositories/public/
+
+KtorEAP
+https://maven.pkg.jetbrains.space/public/p/ktor/eap/
+
+JBossEA
+https://repository.jboss.org/nexus/content/repositories/ea/
+
+Gigaspaces
+https://maven-repository.openspaces.org/
+
+BeDataDriven
+https://nexus.bedatadriven.com/content/groups/public/
+
+Atlassian Public
+https://maven.atlassian.com/content/repositories/atlassian-public/
+
+XWiki Releases
+https://maven.xwiki.org/releases/
+
+Alfresco
+https://artifacts.alfresco.com/nexus/content/repositories/public/
+
+Mulesoft
+https://repository.mulesoft.org/nexus/content/repositories/public/
+
+Spring Plugins
+https://repo.spring.io/plugins-release/
+
+Spring Lib M
+https://repo.spring.io/libs-milestone/
+
+JBoss Releases
+https://repository.jboss.org/nexus/content/repositories/releases/
+
+PentahoOmni
+https://nexus.pentaho.org/content/groups/omni/
+
+
+
+
+
+

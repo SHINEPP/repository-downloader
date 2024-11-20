@@ -371,6 +371,7 @@ class Syncer:
 
 if __name__ == '__main__':
     maven_hosts = [
+        {'uri': 'https://maven.google.com/'},
         {'uri': 'https://dl.google.com/dl/android/maven2/'},
         {'uri': 'https://repo1.maven.org/maven2/'},
         {'uri': 'https://jcenter.bintray.com/'},

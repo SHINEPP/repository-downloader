@@ -58,6 +58,7 @@ def maven_download_files(hosts: list, store_dir: str, relative_path: str) -> Res
             for name in fingerprint:
                 maven_download_file(host, store_dir, relative_path + '.' + name)
             break
+    assert response
     return response
 
 
@@ -352,9 +353,14 @@ class Syncer:
         self.hosts = hosts
         self.store_dir = store_dir
         self.sync_depe = sync_depe
+        self.paths = []
 
     def sync(self, path: str):
         print(f'sync: {path}')
+        # 解决依赖环
+        if path in self.paths:
+            return
+        self.paths.append(path)
         impl = MavenImplementation(self.hosts, self.store_dir, path)
         impl.sync()
         if self.sync_depe:

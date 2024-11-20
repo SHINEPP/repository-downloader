@@ -58,9 +58,10 @@ def maven_download_files(hosts: list, store_dir: str, relative_path: str) -> Res
             for name in fingerprint:
                 maven_download_file(host, store_dir, relative_path + '.' + name)
             break
-
+    if not response:
+        print(f'sync error: {relative_path}')
     is_white = False
-    white_paths = ['androidx.lifecycle/lifecycle-livedata-core-ktx-lint']
+    white_paths = ['androidx/lifecycle/']
     for white_path in white_paths:
         if relative_path.startswith(white_path):
             is_white = True
@@ -213,9 +214,6 @@ class MavenPom:
         self.artifact_id = parent_artifact_id
         self.version = parent_version
 
-        if len(self.group_id) == 0 or len(self.artifact_id) == 0:
-            return False
-
         # properties
         self.properties.clear()
         self.properties['project.groupId'] = self.group_id
@@ -234,10 +232,13 @@ class MavenPom:
                 self.model_version = text
             elif node1.tag == ns + 'groupId':
                 self.group_id = text
+                self.properties['project.groupId'] = self.group_id
             elif node1.tag == ns + 'artifactId':
                 self.artifact_id = text
+                self.properties['project.artifactId'] = self.artifact_id
             elif node1.tag == ns + 'version':
                 self.version = text.strip('[]')
+                self.properties['project.version'] = self.version
             elif node1.tag == ns + 'packaging':
                 self.packaging = text
             elif node1.tag == ns + 'dependencies':
@@ -259,6 +260,9 @@ class MavenPom:
             self.artifact_id = self.implementation.artifact_id
         if len(self.version) == 0:
             self.version = self.implementation.version
+
+        if len(self.group_id) == 0 or len(self.artifact_id) == 0:
+            return False
 
         self.root_dir = os.sep.join(self.group_id.split('.') + [self.artifact_id, self.version])
         return True
@@ -375,7 +379,7 @@ class Syncer:
         self.paths.append(path)
         impl = MavenImplementation(self.hosts, self.store_dir, path)
         impl.sync()
-        if self.sync_depe:
+        if impl.pom and self.sync_depe:
             for depe in impl.pom.dependencies:
                 depe_path = ":".join([depe.group_id, depe.artifact_id, depe.version])
                 self.sync(depe_path)

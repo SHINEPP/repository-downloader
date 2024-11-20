@@ -58,7 +58,15 @@ def maven_download_files(hosts: list, store_dir: str, relative_path: str) -> Res
             for name in fingerprint:
                 maven_download_file(host, store_dir, relative_path + '.' + name)
             break
-    assert response
+
+    is_white = False
+    white_paths = ['androidx.lifecycle/lifecycle-livedata-core-ktx-lint']
+    for white_path in white_paths:
+        if relative_path.startswith(white_path):
+            is_white = True
+            break
+    if not is_white:
+        assert response
     return response
 
 
@@ -85,7 +93,7 @@ class MavenMetadata:
         if os.path.exists(local_metadata):
             modify_time = os.path.getmtime(local_metadata)
             cur_time = time.time().real
-            if cur_time - modify_time < 30 * 60:
+            if cur_time - modify_time < 300 * 60:
                 with open(local_metadata, 'r') as file:
                     metadata_text = file.read()
         if len(metadata_text) == 0:
@@ -168,19 +176,18 @@ class MavenPom:
             if pom_resp:
                 pom_text = pom_resp.text
         if len(pom_text) > 0:
-            self._parser(pom_text)
-            return True
+            return self._parser(pom_text)
         else:
             return False
 
-    def _parser(self, content: str):
+    def _parser(self, content: str) -> bool:
         root = etree.fromstring(content)
         ns = ''
         result = re.match(r'(\{.+}).+', root.tag)
         if result:
             ns = result.group(1)
         if root.tag != ns + 'project':
-            return
+            return False
 
         parent_group_id = ''
         parent_artifact_id = ''
@@ -205,6 +212,9 @@ class MavenPom:
         self.group_id = parent_group_id
         self.artifact_id = parent_artifact_id
         self.version = parent_version
+
+        if len(self.group_id) == 0 or len(self.artifact_id) == 0:
+            return False
 
         # properties
         self.properties.clear()
@@ -251,6 +261,7 @@ class MavenPom:
             self.version = self.implementation.version
 
         self.root_dir = os.sep.join(self.group_id.split('.') + [self.artifact_id, self.version])
+        return True
 
     def _parser_dependency(self, ns, node):
         deps = MavenDependency()
@@ -264,7 +275,7 @@ class MavenPom:
                 deps.version = text.strip('[]')
             elif node1.tag == ns + 'scope':
                 deps.scope = text
-        if len(deps.group_id) > 0:
+        if len(deps.group_id) > 0 and len(deps.artifact_id) > 0:
             self.dependencies.append(deps)
 
     def _parser_node_text(self, text):
@@ -312,15 +323,16 @@ class MavenImplementation:
 
     def _parser(self):
         self.group_id, self.artifact_id, self.version = self.value.split(":")
+        assert len(self.group_id) > 0 and len(self.artifact_id) > 0
         self.root_dir = os.sep.join(self.group_id.split('.') + [self.artifact_id])
         self.metadata_path = os.path.join(self.root_dir, 'maven-metadata.xml')
 
     def sync(self):
         self.metadata = MavenMetadata(self.hosts, self.store_dir, self.metadata_path)
-        self.metadata.sync()
-        self.pom = MavenPom(self.hosts, self.store_dir, self)
-        self.pom.sync(self._pom_path())
-        self._sync_artifact()
+        if self.metadata.sync():
+            self.pom = MavenPom(self.hosts, self.store_dir, self)
+            if self.pom.sync(self._pom_path()):
+                self._sync_artifact()
 
     def _pom_path(self):
         version = ''

@@ -189,7 +189,12 @@ class MavenPom:
             return False
 
     def _parser(self, content: str) -> bool:
-        root = etree.fromstring(content)
+        try:
+            root = etree.fromstring(content)
+        except Exception as e:
+            print(e)
+            return False
+
         ns = ''
         result = re.match(r'(\{.+}).+', root.tag)
         if result:

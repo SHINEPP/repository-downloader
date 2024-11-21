@@ -59,15 +59,7 @@ def maven_download_files(hosts: list, store_dir: str, relative_path: str) -> Res
                 maven_download_file(host, store_dir, relative_path + '.' + name)
             break
     if not response:
-        print(f'sync error: {relative_path}')
-    is_white = False
-    white_paths = ['androidx/lifecycle/']
-    for white_path in white_paths:
-        if relative_path.startswith(white_path):
-            is_white = True
-            break
-    if not is_white:
-        assert response
+        print(f'error: download fail {relative_path}')
     return response
 
 
@@ -94,7 +86,7 @@ class MavenMetadata:
         if os.path.exists(local_metadata):
             modify_time = os.path.getmtime(local_metadata)
             cur_time = time.time().real
-            if cur_time - modify_time < 300 * 60:
+            if cur_time - modify_time < 1000 * 60:
                 with open(local_metadata, 'r') as file:
                     metadata_text = file.read()
         if len(metadata_text) == 0:
@@ -252,8 +244,6 @@ class MavenPom:
                             if node3.tag == ns + 'dependency':
                                 self._parser_dependency(ns, node3)
 
-        if len(self.packaging) == 0:
-            self.packaging = 'jar'
         if len(self.group_id) == 0:
             self.group_id = self.implementation.group_id
         if len(self.artifact_id) == 0:
@@ -283,6 +273,8 @@ class MavenPom:
             self.dependencies.append(deps)
 
     def _parser_node_text(self, text):
+        if not text:
+            return ''
         result = re.match(r'\$\{(.+)}', text)
         if result:
             key = result.group(1)
@@ -301,7 +293,11 @@ class MavenPom:
         return text
 
     def maven_artifact_path(self):
-        return os.path.join(self.root_dir, self.artifact_id + '-' + self.version + '.' + self.packaging)
+        if self.packaging == 'aar' or self.packaging == 'pom':
+            artifact = self.packaging
+        else:
+            artifact = 'jar'
+        return os.path.join(self.root_dir, self.artifact_id + '-' + self.version + '.' + artifact)
 
     def maven_source_jar_path(self):
         return os.path.join(self.root_dir, self.artifact_id + '-' + self.version + '-sources.jar')
@@ -393,11 +389,12 @@ if __name__ == '__main__':
         {'uri': 'https://jcenter.bintray.com/'},
         {'uri': 'https://jitpack.io/'},
         {'uri': 'https://maven.scijava.org/content/repositories/public/'},
-        {'uri': 'https://jfrog.anythinktech.com/artifactory/overseas_sdk'},
-        {'uri': 'https://dl-maven-android.mintegral.com/repository/mbridge_android_sdk_oversea'},
+        {'uri': 'https://jfrog.anythinktech.com/artifactory/overseas_sdk/'},
+        {'uri': 'https://dl-maven-android.mintegral.com/repository/mbridge_android_sdk_oversea/'},
         {'uri': 'https://maven.scijava.org/content/repositories/public/'},
         {'uri': 'https://maven.aliyun.com/repository/google/'},
         {'uri': 'https://maven.aliyun.com/repository/public/'},
+        {'uri': 'https://mvnrepository.com/'},
         {
             'uri': 'https://maven.cherrysoft.cn/repository/maven-releases/',
             'credentials': {
@@ -408,11 +405,11 @@ if __name__ == '__main__':
     ]
 
     syncer = Syncer(hosts=maven_hosts, store_dir='.m', sync_depe=True)
-    syncer.sync('com.google.code.gson:gson:2.8.9')
-    syncer.sync('com.github.Harbor2:emlibrary:v2.2.4')
-    syncer.sync('org.greenrobot:eventbus:3.2.0')
-    syncer.sync('com.airbnb.android:lottie:6.1.0')
-    syncer.sync('jp.wasabeef:glide-transformations:4.3.0')
-    syncer.sync('com.github.bumptech.glide:glide:4.15.1')
+    # syncer.sync('com.google.code.gson:gson:2.8.9')
+    # syncer.sync('com.github.Harbor2:emlibrary:v2.2.4')
+    # syncer.sync('org.greenrobot:eventbus:3.2.0')
+    # syncer.sync('com.airbnb.android:lottie:6.1.0')
+    # syncer.sync('jp.wasabeef:glide-transformations:4.3.0')
+    # syncer.sync('com.github.bumptech.glide:glide:4.15.1')
     syncer.sync('eu.davidea:flexible-adapter-ui:1.0.0')
     syncer.sync('eu.davidea:flexible-adapter:5.1.0')

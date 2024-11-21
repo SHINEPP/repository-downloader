@@ -210,6 +210,8 @@ class MavenPom:
         for node1 in root:
             if node1.tag == ns + 'parent':
                 for node2 in node1:
+                    if not node2.text:
+                        continue
                     text2 = node2.text.strip()
                     if node2.tag == ns + 'groupId':
                         parent_group_id = text2

@@ -71,7 +71,6 @@ class MavenHost:
     def __init__(self, hosts: list, store_dir: str):
         self.hosts = hosts
         self.store_dir = store_dir
-        self.paths = []
 
 
 class MavenDependency:
@@ -154,9 +153,10 @@ class MavenPom:
     Maven Pom文件信息&处理
     """
 
-    def __init__(self, host: MavenHost, pom_path: str):
+    def __init__(self, host: MavenHost, pom_path: str, synced_poms: list[str] | None = None):
         self.host = host
         self.pom_path = pom_path
+        self.synced_poms = synced_poms
         self.model_version = ''
         self.group_id = ''
         self.artifact_id = ''
@@ -168,6 +168,12 @@ class MavenPom:
         self.properties = {str: str}
 
     def sync(self) -> bool:
+        # 防止pom parent死循环
+        if self.synced_poms:
+            if self.pom_path in self.synced_poms:
+                return False
+            self.synced_poms.append(self.pom_path)
+
         pom_text = ''
         local_pom = os.path.join(self.host.store_dir, self.pom_path)
         if os.path.exists(local_pom):
@@ -207,10 +213,8 @@ class MavenPom:
                         parent_version = node2.text.strip('[]')
                 if len(parent_group_id) > 0 and len(parent_artifact_id) > 0:
                     path = f'{parent_group_id}:{parent_artifact_id}:{parent_version}'
-                    if path not in self.host.paths:
-                        self.host.paths.append(path)
-                        impl = MavenImplementation(self.host, path)
-                        impl.sync()
+                    impl = MavenImplementation(self.host, path)
+                    if impl.sync(self.synced_poms):
                         self.parent_pom = impl.pom
 
         self.group_id = parent_group_id
@@ -329,14 +333,15 @@ class MavenImplementation:
         self.root_dir = os.sep.join(self.group_id.split('.') + [self.artifact_id])
         self.metadata_path = os.path.join(self.root_dir, 'maven-metadata.xml')
 
-    def sync(self):
+    def sync(self, synced_poms: list[str] | None = None) -> bool:
         self.metadata = MavenMetadata(self.host, self.metadata_path)
         if self.metadata.sync():
             pom_path = self._pom_path()
             if pom_path:
-                self.pom = MavenPom(self.host, pom_path)
+                self.pom = MavenPom(self.host, pom_path, synced_poms)
                 if self.pom.sync():
-                    self._sync_artifact()
+                    return self._sync_artifact()
+        return False
 
     def _pom_path(self):
         version = None
@@ -373,6 +378,7 @@ class MavenSyncer:
     def __init__(self, host: MavenHost, sync_depe: bool = True):
         self.host = host
         self.sync_depe = sync_depe
+        self.paths = []
 
     def sync(self, path: str):
         self._sync(path, 0)
@@ -380,9 +386,9 @@ class MavenSyncer:
     def _sync(self, path: str, deep: int):
         print(f'sync: {path}')
         # 解决依赖环
-        if path in self.host.paths:
+        if path in self.paths:
             return
-        self.host.paths.append(path)
+        self.paths.append(path)
         impl = MavenImplementation(self.host, path)
         impl.sync()
         if impl.pom and self.sync_depe:

@@ -205,12 +205,13 @@ class MavenPom:
         for node1 in root:
             if node1.tag == ns + 'parent':
                 for node2 in node1:
+                    text2 = node2.text.strip()
                     if node2.tag == ns + 'groupId':
-                        parent_group_id = node2.text.strip('[]')
+                        parent_group_id = text2
                     elif node2.tag == ns + 'artifactId':
-                        parent_artifact_id = node2.text.strip('[]')
+                        parent_artifact_id = text2
                     elif node2.tag == ns + 'version':
-                        parent_version = node2.text.strip('[]')
+                        parent_version = text2.strip('[]')
                 if len(parent_group_id) > 0 and len(parent_artifact_id) > 0:
                     path = f'{parent_group_id}:{parent_artifact_id}:{parent_version}'
                     impl = MavenImplementation(self.host, path)
@@ -234,7 +235,7 @@ class MavenPom:
                         self.properties[node2.tag[len(ns):]] = node2.text.strip()
 
         for node1 in root:
-            text = self._parser_node_text(node1.text)
+            text = self._parser_node_text(node1.text.strip())
             if node1.tag == ns + 'modelVersion':
                 self.model_version = text
             elif node1.tag == ns + 'groupId':
@@ -268,7 +269,7 @@ class MavenPom:
     def _parser_dependency(self, ns, node):
         deps = MavenDependency()
         for node1 in node:
-            text = self._parser_node_text(node1.text)
+            text = self._parser_node_text(node1.text.strip())
             if node1.tag == ns + 'groupId':
                 deps.group_id = text
             elif node1.tag == ns + 'artifactId':
@@ -420,7 +421,8 @@ if __name__ == '__main__':
         }
     ]
 
-    syncer = MavenSyncer(MavenHost(hosts=maven_hosts, store_dir='.m'), sync_depe=True)
+    storage = '/Volumes/WDDATA/maven/repository'
+    syncer = MavenSyncer(MavenHost(hosts=maven_hosts, store_dir=storage), sync_depe=True)
     syncer.sync('com.google.code.gson:gson:2.8.9')
     syncer.sync('com.github.Harbor2:emlibrary:v2.2.4')
     syncer.sync('org.greenrobot:eventbus:3.2.0')

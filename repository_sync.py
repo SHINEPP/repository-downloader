@@ -286,10 +286,9 @@ class MavenPom:
             while parent is not None and value is None:
                 if key in parent.properties.keys():
                     value = parent.properties[key]
-                else:
-                    value = None
-                parent = self.parent_pom
-            return value
+                parent = parent.parent_pom
+            if value:
+                return value
         return text
 
     def maven_artifact_path(self):
@@ -368,7 +367,10 @@ class Syncer:
         self.paths = []
 
     def sync(self, path: str):
-        print(f'sync: {path}')
+        self._sync(path, 0)
+
+    def _sync(self, path: str, deep: int):
+        print(f'sync[{deep}]: {path}')
         # 解决依赖环
         if path in self.paths:
             return
@@ -378,7 +380,7 @@ class Syncer:
         if impl.pom and self.sync_depe:
             for depe in impl.pom.dependencies:
                 depe_path = ":".join([depe.group_id, depe.artifact_id, depe.version])
-                self.sync(depe_path)
+                self._sync(depe_path, deep + 1)
 
 
 if __name__ == '__main__':
@@ -411,5 +413,7 @@ if __name__ == '__main__':
     # syncer.sync('com.airbnb.android:lottie:6.1.0')
     # syncer.sync('jp.wasabeef:glide-transformations:4.3.0')
     # syncer.sync('com.github.bumptech.glide:glide:4.15.1')
-    syncer.sync('eu.davidea:flexible-adapter-ui:1.0.0')
-    syncer.sync('eu.davidea:flexible-adapter:5.1.0')
+    # syncer.sync('eu.davidea:flexible-adapter-ui:1.0.0')
+    # syncer.sync('eu.davidea:flexible-adapter:5.1.0')
+
+    syncer.sync('com.google.inject:guice:2.0')

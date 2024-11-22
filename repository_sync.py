@@ -101,7 +101,7 @@ class MavenMetadata:
         self.versions = []
         self.last_updated = ''
 
-    def sync(self) -> bool:
+    def sync(self, is_download: bool = True) -> bool:
         metadata_text = ''
         local_metadata = os.path.join(self.host.store_dir, self.metadata_path)
         if os.path.exists(local_metadata):
@@ -110,7 +110,7 @@ class MavenMetadata:
             if cur_time - modify_time < 1000 * 60:
                 with open(local_metadata, 'r') as file:
                     metadata_text = file.read()
-        if len(metadata_text) == 0:
+        if is_download and len(metadata_text) == 0:
             metadata_resp = maven_download_files(self.host.hosts, self.host.store_dir, self.metadata_path)
             if metadata_resp:
                 metadata_text = metadata_resp.text
@@ -163,11 +163,11 @@ class MavenPom:
         self.version = ''
         self.packaging = ''
         self.root_dir = ''
-        self.dependencies: list[MavenDependency] = []
         self.parent_pom: MavenPom | None = None
         self.properties = {str: str}
+        self._dependencies: list[MavenDependency] = []
 
-    def sync(self) -> bool:
+    def sync(self, is_download: bool = True) -> bool:
         # 防止pom parent死循环
         if self.synced_poms:
             if self.pom_path in self.synced_poms:
@@ -179,16 +179,16 @@ class MavenPom:
         if os.path.exists(local_pom):
             with open(local_pom, 'r') as file:
                 pom_text = file.read()
-        if len(pom_text) == 0:
+        if is_download and len(pom_text) == 0:
             pom_resp = maven_download_files(self.host.hosts, self.host.store_dir, self.pom_path)
             if pom_resp:
                 pom_text = pom_resp.text
         if len(pom_text) > 0:
-            return self._parser(pom_text)
+            return self._parser(pom_text, is_download)
         else:
             return False
 
-    def _parser(self, content: str) -> bool:
+    def _parser(self, content: str, is_download: bool = True) -> bool:
         try:
             root = etree.fromstring(content)
         except Exception as e:
@@ -222,7 +222,8 @@ class MavenPom:
                 if len(parent_group_id) > 0 and len(parent_artifact_id) > 0:
                     path = f'{parent_group_id}:{parent_artifact_id}:{parent_version}'
                     impl = MavenImplementation(self.host, path)
-                    if impl.sync(self.synced_poms):
+                    impl.sync_metadata()
+                    if impl.sync_pom(is_download=is_download, synced_poms=self.synced_poms):
                         self.parent_pom = impl.pom
 
         self.group_id = parent_group_id
@@ -289,7 +290,7 @@ class MavenPom:
             elif node1.tag == ns + 'scope':
                 deps.scope = text
         if len(deps.group_id) > 0 and len(deps.artifact_id) > 0:
-            self.dependencies.append(deps)
+            self._dependencies.append(deps)
 
     def _parser_node_text(self, text):
         if not text:
@@ -309,6 +310,17 @@ class MavenPom:
             if value:
                 return value
         return text
+
+    def maven_dependencies(self) -> list[MavenDependency]:
+        deps = []
+        if self.parent_pom:
+            dep_list = self.parent_pom.maven_dependencies()
+            if dep_list:
+                for dep in dep_list:
+                    deps.append(dep)
+        for dep in self._dependencies:
+            deps.append(dep)
+        return deps
 
     def maven_artifact_path(self):
         if self.packaging == 'aar' or self.packaging == 'pom':
@@ -344,14 +356,20 @@ class MavenImplementation:
         self.root_dir = os.sep.join(self.group_id.split('.') + [self.artifact_id])
         self.metadata_path = os.path.join(self.root_dir, 'maven-metadata.xml')
 
-    def sync(self, synced_poms: list[str] | None = None) -> bool:
-        self.metadata = MavenMetadata(self.host, self.metadata_path)
-        if self.metadata.sync():
-            pom_path = self._pom_path()
-            if pom_path:
-                self.pom = MavenPom(self.host, pom_path, synced_poms)
-                if self.pom.sync():
-                    return self._sync_artifact()
+    def sync_metadata(self, is_download: bool = True) -> bool:
+        metadata = MavenMetadata(self.host, self.metadata_path)
+        if metadata.sync(is_download):
+            self.metadata = metadata
+            return True
+        return False
+
+    def sync_pom(self, is_download: bool = True, synced_poms: list[str] | None = None) -> bool:
+        pom_path = self._pom_path()
+        if pom_path:
+            pom = MavenPom(self.host, pom_path, synced_poms)
+            if pom.sync(is_download):
+                self.pom = pom
+                return True
         return False
 
     def _pom_path(self):
@@ -370,7 +388,7 @@ class MavenImplementation:
         else:
             return None
 
-    def _sync_artifact(self) -> bool:
+    def sync_artifact(self) -> bool:
         if not self.pom:
             return False
         artifact_path = self.pom.maven_artifact_path()
@@ -401,11 +419,53 @@ class MavenSyncer:
             return
         self.paths.append(path)
         impl = MavenImplementation(self.host, path)
-        impl.sync()
+        impl.sync_metadata()
+        impl.sync_pom()
+        impl.sync_artifact()
         if impl.pom and self.sync_depe:
-            for depe in impl.pom.dependencies:
+            depe_list = impl.pom.maven_dependencies()
+            if depe_list:
+                for depe in depe_list:
+                    depe_path = ":".join([depe.group_id, depe.artifact_id, depe.version])
+                    self._sync(depe_path, deep + 1)
+
+
+class DependencyPrinter:
+    def __init__(self, host: MavenHost):
+        self.host = host
+        self.paths = []
+
+    def print(self, path: str):
+        self._print('', path, 0, False)
+
+    def _print(self, start: str, path: str, deep: int, is_last: bool):
+        if is_last:
+            tail = '\\---'
+        else:
+            tail = '+---'
+        if len(path) > 0:
+            is_back = path in self.paths
+            if is_back:
+                tail2 = ' (*)'
+            else:
+                tail2 = ''
+        else:
+            is_back = True
+            tail2 = '?'
+        self.paths.append(path)
+        print(('|' + ' ' * 3) * deep + tail + path + tail2)
+        if is_back:
+            return
+        impl = MavenImplementation(self.host, path)
+        impl.sync_metadata(False)
+        impl.sync_pom(is_download=False)
+        if impl.pom:
+            depe_list = impl.pom.maven_dependencies()
+            for depe in depe_list:
                 depe_path = ":".join([depe.group_id, depe.artifact_id, depe.version])
-                self._sync(depe_path, deep + 1)
+                self._print(depe_path, deep + 1, depe == depe_list[-1])
+        else:
+            self._print('', deep + 1, True)
 
 
 if __name__ == '__main__':
@@ -431,13 +491,16 @@ if __name__ == '__main__':
         }
     ]
 
-    storage = '/Volumes/WDDATA/maven/repository'
+    storage = '.m'
     syncer = MavenSyncer(MavenHost(hosts=maven_hosts, store_dir=storage), sync_depe=True)
-    syncer.sync('com.google.code.gson:gson:2.8.9')
-    syncer.sync('com.github.Harbor2:emlibrary:v2.2.4')
-    syncer.sync('org.greenrobot:eventbus:3.2.0')
-    syncer.sync('com.airbnb.android:lottie:6.1.0')
-    syncer.sync('jp.wasabeef:glide-transformations:4.3.0')
-    syncer.sync('com.github.bumptech.glide:glide:4.15.1')
-    syncer.sync('eu.davidea:flexible-adapter-ui:1.0.0')
-    syncer.sync('eu.davidea:flexible-adapter:5.1.0')
+    # syncer.sync('com.google.code.gson:gson:2.8.9')
+    # syncer.sync('com.github.Harbor2:emlibrary:v2.2.4')
+    # syncer.sync('org.greenrobot:eventbus:3.2.0')
+    # syncer.sync('com.airbnb.android:lottie:6.1.0')
+    # syncer.sync('jp.wasabeef:glide-transformations:4.3.0')
+    # syncer.sync('com.github.bumptech.glide:glide:4.15.1')
+    # syncer.sync('eu.davidea:flexible-adapter-ui:1.0.0')
+    # syncer.sync('eu.davidea:flexible-adapter:5.1.0')
+
+    printer = DependencyPrinter(MavenHost(hosts=maven_hosts, store_dir=storage))
+    printer.print('eu.davidea:flexible-adapter:5.1.0')

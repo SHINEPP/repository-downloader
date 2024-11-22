@@ -431,6 +431,11 @@ class MavenSyncer:
 
 
 class DependencyPrinter:
+    ADD_TAG = '+--- '
+    END_TAG = '\\--- '
+    CON_TAG = '|' + ' ' * 4
+    EMPTY_TAG = ' ' * 5
+
     def __init__(self, host: MavenHost):
         self.host = host
         self.paths = []
@@ -457,9 +462,9 @@ class DependencyPrinter:
             is_finished = False
 
         if is_last:
-            tag = '\\--- '
+            tag = DependencyPrinter.END_TAG
         else:
-            tag = '+--- '
+            tag = DependencyPrinter.ADD_TAG
         print(''.join(self.tags) + tag + name)
 
         if is_finished:
@@ -472,9 +477,9 @@ class DependencyPrinter:
 
         if not impl.pom:
             if is_last:
-                self.tags.append(' ' * 5)
+                self.tags.append(DependencyPrinter.EMPTY_TAG)
             else:
-                self.tags.append('|' + ' ' * 4)
+                self.tags.append(DependencyPrinter.CON_TAG)
             self._print('', deep + 1, True)
             self.tags.pop()
             return
@@ -484,9 +489,9 @@ class DependencyPrinter:
             last = depe == depe_list[-1]
             depe_path = ":".join([depe.group_id, depe.artifact_id, depe.version])
             if is_last:
-                self.tags.append(' ' * 5)
+                self.tags.append(DependencyPrinter.EMPTY_TAG)
             else:
-                self.tags.append('|' + ' ' * 4)
+                self.tags.append(DependencyPrinter.CON_TAG)
             self._print(depe_path, deep + 1, last)
             self.tags.pop()
 

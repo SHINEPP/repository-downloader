@@ -434,38 +434,49 @@ class DependencyPrinter:
     def __init__(self, host: MavenHost):
         self.host = host
         self.paths = []
+        self.tags = []
 
     def print(self, path: str):
-        self._print('', path, 0, False)
+        self.tags.clear()
+        self._print(path, 0, False)
 
-    def _print(self, start: str, path: str, deep: int, is_last: bool):
+    def _print(self, path: str, deep: int, is_last: bool):
         if is_last:
-            tail = '\\---'
+            start_tag = '\\---'
         else:
-            tail = '+---'
+            start_tag = '+---'
         if len(path) > 0:
-            is_back = path in self.paths
-            if is_back:
-                tail2 = ' (*)'
+            is_return = path in self.paths
+            if is_return:
+                end_tag = ' (*)'
             else:
-                tail2 = ''
+                end_tag = ''
         else:
-            is_back = True
-            tail2 = '?'
+            is_return = True
+            end_tag = '?'
+
         self.paths.append(path)
-        print(('|' + ' ' * 3) * deep + tail + path + tail2)
-        if is_back:
+        print(''.join(self.tags) + start_tag + path + end_tag)
+
+        if is_return:
             return
+
         impl = MavenImplementation(self.host, path)
         impl.sync_metadata(False)
         impl.sync_pom(is_download=False)
-        if impl.pom:
-            depe_list = impl.pom.maven_dependencies()
-            for depe in depe_list:
-                depe_path = ":".join([depe.group_id, depe.artifact_id, depe.version])
-                self._print(depe_path, deep + 1, depe == depe_list[-1])
-        else:
+        if not impl.pom:
+            self.tags.append('|' + ' ' * 3)
             self._print('', deep + 1, True)
+            self.tags.pop()
+            return
+
+        depe_list = impl.pom.maven_dependencies()
+        for depe in depe_list:
+            is_last = depe == depe_list[-1]
+            depe_path = ":".join([depe.group_id, depe.artifact_id, depe.version])
+            self.tags.append('|' + ' ' * 3)
+            self._print(depe_path, deep + 1, is_last)
+            self.tags.pop()
 
 
 if __name__ == '__main__':

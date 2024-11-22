@@ -426,7 +426,7 @@ if __name__ == '__main__':
             'uri': 'https://maven.cherrysoft.cn/repository/maven-releases/',
             'credentials': {
                 'username': 'develop',
-                'password': '1234567890'
+                'password': '12345'
             }
         }
     ]

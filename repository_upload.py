@@ -3,15 +3,25 @@ from xml.dom import minidom
 import requests
 from requests.auth import HTTPBasicAuth
 
+XML_NAMESPACE = 'http://maven.apache.org/POM/4.0.0'
+XSI_NAMESPACE = 'http://www.w3.org/2001/XMLSchema-instance'
+XSI_SCHEMA_LOCATION = 'http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd'
 
-def gen_pom(group_id_v: str, artifact_id_v: str, version_v: str, packaging_v: str, dependencies_v: list):
+
+def create_maven_pom(group_id_v: str, artifact_id_v: str, version_v: str, packaging_v: str,
+                     dependencies_v: list) -> bytes:
+    """
+    创建maven pom文件
+    """
     doc = minidom.Document()
+    # project attribute
     project = doc.createElement('project')
-    project.setAttribute('xmlns', 'http://maven.apache.org/POM/4.0.0')
-    project.setAttribute('xsi:schemaLocation',
-                         'http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd')
-    project.setAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance')
+    project.setAttribute('xsi:schemaLocation', XSI_SCHEMA_LOCATION)
+    project.setAttribute('xmlns', XML_NAMESPACE)
+    project.setAttribute('xmlns:xsi', XSI_NAMESPACE)
     doc.appendChild(project)
+
+    # model version
     model_version = doc.createElement('modelVersion')
     model_version.appendChild(doc.createTextNode('4.0.0'))
     project.appendChild(model_version)
@@ -45,26 +55,30 @@ def gen_pom(group_id_v: str, artifact_id_v: str, version_v: str, packaging_v: st
             dependencies.appendChild(dependency)
         project.appendChild(dependencies)
 
-    xml = doc.toprettyxml(indent='  ', newl='\n', encoding="utf-8")
-    print(xml.decode())
-    return xml
+    return doc.toprettyxml(indent='  ', newl='\n', encoding="utf-8")
 
 
 def upload_aar():
-    group_id = 'com.shine.test66'
-    artifact_id = 'alpha'
-    version = '1.0.2'
-    upload_repository_url = 'https://maven.cherrysoft.cn/service/rest/v1/components?repository=maven-releases'
+    repository_url = 'https://maven.cherrysoft.cn/service/rest/v1/components?repository=maven-releases'
     username = 'develop'
-    password = '1234567890'
+    password = '12345'
 
-    aar_file_path = '/Users/zhouzhenliang/Desktop/temp/maven/develop-gp-10.7.2.0.aar'
+    group_id = 'com.shine.test66'
+    artifact_id = 'alpha1'
+    version = '1.0.2'
+    packaging = 'aar'
+    aar_file_path = '/Users/zhouzhenliang/Desktop/temp/coordinator-main-4.9.2.6.aar'
+    dependencies = []
+
+    artifact_file = open(aar_file_path, 'rb')
+    pom_bytes = create_maven_pom(group_id, artifact_id, version, packaging, dependencies)
+    print(pom_bytes.decode())
 
     # 准备要上传的文件
     files = {
-        'maven2.asset1': open(aar_file_path, 'rb'),
+        'maven2.asset1': artifact_file,
         'maven2.asset1.extension': (None, 'aar'),
-        'maven2.asset2': gen_pom(group_id, artifact_id, version, 'aar', []),
+        'maven2.asset2': pom_bytes,
         'maven2.asset2.extension': (None, 'pom'),
         'maven2.groupId': (None, group_id),
         'maven2.artifactId': (None, artifact_id),
@@ -72,11 +86,9 @@ def upload_aar():
     }
 
     # 通过 HTTP POST 上传 AAR 文件
-    response = requests.post(upload_repository_url, files=files, auth=HTTPBasicAuth(username, password))
+    response = requests.post(repository_url, files=files, auth=HTTPBasicAuth(username, password))
     print(f'code: {response.status_code}, {response.text}')
 
 
 if __name__ == '__main__':
-    # gen_pom('com.oh.ad.phonebatterydoctorssgp', 'develop-gp', "10.7.2.0", 'aar',
-    #         [{'groupId': 'com.oh.ad.core', 'artifactId': 'develop', 'version': '10.7.2.1', 'scope': 'compile'}])
     upload_aar()

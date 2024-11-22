@@ -438,44 +438,55 @@ class DependencyPrinter:
 
     def print(self, path: str):
         self.tags.clear()
-        self._print(path, 0, False)
+        self.tags.append('')
+        self._print(path, 0, True)
 
     def _print(self, path: str, deep: int, is_last: bool):
+        if len(path) == 0:
+            name = '?'
+            is_finished = True
+        elif path in self.paths:
+            name = f'{path} (*)'
+            is_finished = True
+        else:
+            name = path
+            is_finished = False
+
         if is_last:
-            start_tag = '\\---'
+            tag = '\\--- '
         else:
-            start_tag = '+---'
-        if len(path) > 0:
-            is_return = path in self.paths
-            if is_return:
-                end_tag = ' (*)'
-            else:
-                end_tag = ''
-        else:
-            is_return = True
-            end_tag = '?'
+            tag = '+--- '
+        print(''.join(self.tags) + tag + name)
+        if is_last:
+            self.tags.pop()
+            self.tags.append(' ' * 5)
 
-        self.paths.append(path)
-        print(''.join(self.tags) + start_tag + path + end_tag)
-
-        if is_return:
+        if is_finished:
             return
 
+        self.paths.append(path)
         impl = MavenImplementation(self.host, path)
         impl.sync_metadata(False)
         impl.sync_pom(is_download=False)
+
         if not impl.pom:
-            self.tags.append('|' + ' ' * 3)
+            if is_last:
+                self.tags.append(' ' * 5)
+            else:
+                self.tags.append('|' + ' ' * 4)
             self._print('', deep + 1, True)
             self.tags.pop()
             return
 
         depe_list = impl.pom.maven_dependencies()
         for depe in depe_list:
-            is_last = depe == depe_list[-1]
+            last = depe == depe_list[-1]
             depe_path = ":".join([depe.group_id, depe.artifact_id, depe.version])
-            self.tags.append('|' + ' ' * 3)
-            self._print(depe_path, deep + 1, is_last)
+            if is_last:
+                self.tags.append(' ' * 5)
+            else:
+                self.tags.append('|' + ' ' * 4)
+            self._print(depe_path, deep + 1, last)
             self.tags.pop()
 
 

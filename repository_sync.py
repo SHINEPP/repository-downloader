@@ -437,13 +437,19 @@ class DependencyPrinter:
         self.tags = []
 
     def print(self, path: str):
-        self.tags.clear()
-        self.tags.append('')
-        self._print(path, 0, True)
+        self.prints([path])
+
+    def prints(self, paths: list[str]):
+        print('dependency')
+        for path in paths:
+            self.tags.clear()
+            self._print(path, 0, path == paths[-1])
 
     def _print(self, path: str, deep: int, is_last: bool):
+        if deep > 3:
+            return
         if len(path) == 0:
-            name = '?'
+            name = '(?)'
             is_finished = True
         elif path in self.paths:
             name = f'{path} (*)'
@@ -457,7 +463,7 @@ class DependencyPrinter:
         else:
             tag = '+--- '
         print(''.join(self.tags) + tag + name)
-        if is_last:
+        if is_last and len(self.tags) > 0:
             self.tags.pop()
             self.tags.append(' ' * 5)
 
@@ -525,4 +531,6 @@ if __name__ == '__main__':
     # syncer.sync('eu.davidea:flexible-adapter:5.1.0')
 
     printer = DependencyPrinter(MavenHost(hosts=maven_hosts, store_dir=storage))
-    printer.print('eu.davidea:flexible-adapter:5.1.0')
+    printer.prints([
+        'eu.davidea:flexible-adapter:5.1.0',
+        'eu.davidea:flexible-adapter-ui:5.1.0'])

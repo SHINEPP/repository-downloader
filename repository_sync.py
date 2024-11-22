@@ -242,7 +242,10 @@ class MavenPom:
                         self.properties[node2.tag[len(ns):]] = node2.text.strip()
 
         for node1 in root:
-            text = self._parser_node_text(node1.text.strip())
+            text = node1.text
+            if not text:
+                text = ''
+            text = self._parser_node_text(text.strip())
             if node1.tag == ns + 'modelVersion':
                 self.model_version = text
             elif node1.tag == ns + 'groupId':

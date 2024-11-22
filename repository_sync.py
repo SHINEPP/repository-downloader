@@ -84,6 +84,9 @@ class MavenDependency:
         self.version = ''
         self.scope = ''
 
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
 
 class MavenMetadata:
     """
@@ -290,7 +293,8 @@ class MavenPom:
             elif node1.tag == ns + 'scope':
                 deps.scope = text
         if len(deps.group_id) > 0 and len(deps.artifact_id) > 0:
-            self._dependencies.append(deps)
+            if not (deps in self._dependencies):
+                self._dependencies.append(deps)
 
     def _parser_node_text(self, text):
         if not text:
@@ -317,9 +321,11 @@ class MavenPom:
             dep_list = self.parent_pom.maven_dependencies()
             if dep_list:
                 for dep in dep_list:
-                    deps.append(dep)
+                    if not (dep in deps):
+                        deps.append(dep)
         for dep in self._dependencies:
-            deps.append(dep)
+            if not (dep in deps):
+                deps.append(dep)
         return deps
 
     def maven_artifact_path(self):

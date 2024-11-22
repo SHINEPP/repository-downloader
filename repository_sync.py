@@ -446,8 +446,6 @@ class DependencyPrinter:
             self._print(path, 0, path == paths[-1])
 
     def _print(self, path: str, deep: int, is_last: bool):
-        if deep > 3:
-            return
         if len(path) == 0:
             name = '(?)'
             is_finished = True
@@ -463,9 +461,6 @@ class DependencyPrinter:
         else:
             tag = '+--- '
         print(''.join(self.tags) + tag + name)
-        if is_last and len(self.tags) > 0:
-            self.tags.pop()
-            self.tags.append(' ' * 5)
 
         if is_finished:
             return
@@ -519,7 +514,7 @@ if __name__ == '__main__':
         }
     ]
 
-    storage = '.m'
+    storage = '/Volumes/WDDATA/maven/repository'
     syncer = MavenSyncer(MavenHost(hosts=maven_hosts, store_dir=storage), sync_depe=True)
     # syncer.sync('com.google.code.gson:gson:2.8.9')
     # syncer.sync('com.github.Harbor2:emlibrary:v2.2.4')

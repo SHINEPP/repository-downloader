@@ -110,7 +110,7 @@ class MavenMetadata:
         if os.path.exists(local_metadata):
             modify_time = os.path.getmtime(local_metadata)
             cur_time = time.time().real
-            if cur_time - modify_time < 1000 * 60:
+            if cur_time - modify_time < 10000 * 60:
                 with open(local_metadata, 'r') as file:
                     metadata_text = file.read()
         if is_download and len(metadata_text) == 0:
@@ -241,7 +241,7 @@ class MavenPom:
         for node1 in root:
             if node1.tag == ns + 'properties':
                 for node2 in node1:
-                    text2 = node2.text
+                    text2 = self._parser_node_text(node2.text)
                     if node2.tag and text2:
                         self.properties[node2.tag[len(ns):]] = node2.text.strip()
 
@@ -329,10 +329,10 @@ class MavenPom:
         return deps
 
     def maven_artifact_path(self):
-        if self.packaging == 'aar' or self.packaging == 'pom':
-            artifact = self.packaging
-        else:
+        if len(self.packaging) == 0 or self.packaging == 'bundle':
             artifact = 'jar'
+        else:
+            artifact = self.packaging
         return os.path.join(self.root_dir, self.artifact_id + '-' + self.version + '.' + artifact)
 
     def maven_source_jar_path(self):
@@ -460,7 +460,7 @@ class DependencyPrinter:
         if len(path) == 0:
             name = '(?)'
             is_finished = True
-        elif path in self.paths:
+        elif deep >= 10 or path in self.paths:
             name = f'{path} (*)'
             is_finished = True
         else:
@@ -504,6 +504,14 @@ class DependencyPrinter:
 
 if __name__ == '__main__':
     maven_hosts = [
+        {
+            'uri': 'https://maven.cherrysoft.cn/repository/maven-releases/',
+            'credentials': {
+                'username': 'develop',
+                'password': 'qwert12345'
+            }
+        },
+        {'uri': 'https://artifact.bytedance.com/repository/pangle/'},
         {'uri': 'https://maven.google.com/'},
         {'uri': 'https://dl.google.com/dl/android/maven2/'},
         {'uri': 'https://repo1.maven.org/maven2/'},
@@ -516,17 +524,10 @@ if __name__ == '__main__':
         {'uri': 'https://maven.aliyun.com/repository/google/'},
         {'uri': 'https://maven.aliyun.com/repository/public/'},
         {'uri': 'https://mvnrepository.com/'},
-        {
-            'uri': 'https://maven.cherrysoft.cn/repository/maven-releases/',
-            'credentials': {
-                'username': 'develop',
-                'password': '12345'
-            }
-        }
     ]
 
-    storage = '/Volumes/WDDATA/maven/repository'
-    syncer = MavenSyncer(MavenHost(hosts=maven_hosts, store_dir=storage), sync_depe=True)
+    storage = '.m'
+    syncer = MavenSyncer(MavenHost(hosts=maven_hosts, store_dir=storage), sync_depe=False)
     # syncer.sync('com.google.code.gson:gson:2.8.9')
     # syncer.sync('com.github.Harbor2:emlibrary:v2.2.4')
     # syncer.sync('org.greenrobot:eventbus:3.2.0')
@@ -536,7 +537,15 @@ if __name__ == '__main__':
     # syncer.sync('eu.davidea:flexible-adapter-ui:1.0.0')
     # syncer.sync('eu.davidea:flexible-adapter:5.1.0')
 
-    printer = DependencyPrinter(MavenHost(hosts=maven_hosts, store_dir=storage))
-    printer.prints([
-        'eu.davidea:flexible-adapter:5.1.0',
-        'eu.davidea:flexible-adapter-ui:5.1.0'])
+    syncer.sync('com.pangle.global:ads-sdk:6.4.6.2')
+
+    # printer = DependencyPrinter(MavenHost(hosts=maven_hosts, store_dir=storage))
+    # printer.prints([
+    # 'com.google.code.gson:gson:2.8.9',
+    # 'com.github.Harbor2:emlibrary:v2.2.4',
+    # 'org.greenrobot:eventbus:3.2.0',
+    # 'com.airbnb.android:lottie:6.1.0',
+    # 'jp.wasabeef:glide-transformations:4.3.0',
+    # 'com.github.bumptech.glide:glide:4.15.1',
+    # 'eu.davidea:flexible-adapter:5.1.0',
+    # 'eu.davidea:flexible-adapter-ui:5.1.0'])

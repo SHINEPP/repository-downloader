@@ -61,13 +61,13 @@ def create_maven_pom(group_id_v: str, artifact_id_v: str, version_v: str, packag
 def upload_aar():
     repository_url = 'https://maven.cherrysoft.cn/service/rest/v1/components?repository=maven-releases'
     username = 'develop'
-    password = '12345'
+    password = 'qwert12345'
 
-    group_id = 'com.shine.test66'
-    artifact_id = 'alpha1'
-    version = '1.0.2'
+    group_id = 'com.pangle.global'
+    artifact_id = 'ads-sdk'
+    version = '6.4.6.2'
     packaging = 'aar'
-    aar_file_path = '/Users/zhouzhenliang/Desktop/temp/coordinator-main-4.9.2.6.aar'
+    aar_file_path = '/Users/zhouzhenliang/Desktop/pangle/pangle_i18n_sdk_6.4.6.2/sdk_6.4.6.2/open_ad_sdk.aar'
     dependencies = []
 
     artifact_file = open(aar_file_path, 'rb')

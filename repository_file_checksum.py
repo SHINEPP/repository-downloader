@@ -22,4 +22,4 @@ def gen_check_sum(path: str):
 
 if __name__ == '__main__':
     gen_check_sum(
-        '/Users/zhouzhenliang/Desktop/temp/topon_log/com/anythink/sdk/interstitial-tpn-alpha/6.4.17/interstitial-tpn-alpha-6.4.17.aar')
+        '/Users/zhouzhenliang/Desktop/temp/topon-out/com/anythink/sdk/interstitial-tpn-beta/6.4.17/interstitial-tpn-beta-6.4.17.aar')

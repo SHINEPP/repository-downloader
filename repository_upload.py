@@ -63,12 +63,16 @@ def upload_aar():
     username = 'develop'
     password = 'qwert12345'
 
-    group_id = 'com.pangle.global'
-    artifact_id = 'ads-sdk'
-    version = '6.4.6.2'
+    group_id = 'com.adjust.sdk'
+    artifact_id = 'adjust-android-dyload1'
+    version = '5.0.2'
     packaging = 'aar'
-    aar_file_path = '/Users/zhouzhenliang/Desktop/pangle/pangle_i18n_sdk_6.4.6.2/sdk_6.4.6.2/open_ad_sdk.aar'
-    dependencies = []
+    aar_file_path = '/Users/zhouzhenliang/Desktop/temp/adjust-android-5.0.2_out.aar'
+    dependencies = [{'groupId': 'com.adjust.signature',
+                     'artifactId': 'adjust-android-signature',
+                     'version': '3.35.0',
+                     'scope': 'compile'}
+                    ]
 
     artifact_file = open(aar_file_path, 'rb')
     pom_bytes = create_maven_pom(group_id, artifact_id, version, packaging, dependencies)

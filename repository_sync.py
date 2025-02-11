@@ -538,7 +538,7 @@ if __name__ == '__main__':
     # syncer.sync('eu.davidea:flexible-adapter:5.1.0')
 
     syncer.sync('com.adjust.sdk:adjust-android:5.0.2')
-    syncer.sync('com.adjust.signature:adjust-android-signature:3.35.0')
+    # syncer.sync('com.adjust.signature:adjust-android-signature:3.35.0')
 
     # printer = DependencyPrinter(MavenHost(hosts=maven_hosts, store_dir=storage))
     # printer.prints([

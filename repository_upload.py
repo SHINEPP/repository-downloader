@@ -64,7 +64,7 @@ def upload_aar():
     password = 'qwert12345'
 
     group_id = 'com.adjust.sdk'
-    artifact_id = 'adjust-android-dyload1'
+    artifact_id = 'adjust-android-dyload3'
     version = '5.0.2'
     packaging = 'aar'
     aar_file_path = '/Users/zhouzhenliang/Desktop/temp/adjust-android-5.0.2_out.aar'

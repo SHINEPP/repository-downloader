@@ -1,5 +1,3 @@
-from xml.dom import minidom
-
 import requests
 from requests.auth import HTTPBasicAuth
 
@@ -11,12 +9,16 @@ def upload_aar():
     username = 'develop'
     password = 'qwert12345'
 
-    group_id = 'com.bigossp'
-    artifact_id = 'bigo-ads-dyload1'
-    version = '5.0.1'
+    group_id = 'com.adjust.sdk'
+    artifact_id = 'adjust-android_business-dy1'
+    version = '5.1.0'
     packaging = 'aar'
-    aar_file_path = '/Users/zhouzhenliang/Desktop/temp/bigo-ads-5.0.1_out.aar'
-    dependencies = []
+    aar_file_path = '/Users/zhouzhenliang/Desktop/temp/adjust-android-5.1.0_out.aar'
+    dependencies = [{'groupId': 'com.adjust.signature',
+                     'artifactId': 'adjust-android-signature',
+                     'version': '3.35.2',
+                     'scope': 'compile'}
+                    ]
 
     artifact_file = open(aar_file_path, 'rb')
     pom_bytes = create_maven_pom(group_id, artifact_id, version, packaging, dependencies)

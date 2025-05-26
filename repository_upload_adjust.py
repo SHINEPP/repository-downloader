@@ -10,15 +10,11 @@ def upload_aar():
     password = 'qwert12345'
 
     group_id = 'com.adjust.sdk'
-    artifact_id = 'adjust-android_business-dy1'
-    version = '5.1.0'
+    artifact_id = 'adjust-android'
+    version = '5.3.0-2025051301'
     packaging = 'aar'
-    aar_file_path = '/Users/zhouzhenliang/Desktop/temp/adjust-android-5.1.0_out.aar'
-    dependencies = [{'groupId': 'com.adjust.signature',
-                     'artifactId': 'adjust-android-signature',
-                     'version': '3.35.2',
-                     'scope': 'compile'}
-                    ]
+    aar_file_path = '/Users/zhouzhenliang/Desktop/security_250513/adjust/build/adjust-android-5.3.0_20250513.aar'
+    dependencies = []
 
     artifact_file = open(aar_file_path, 'rb')
     pom_bytes = create_maven_pom(group_id, artifact_id, version, packaging, dependencies)

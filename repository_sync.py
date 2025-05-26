@@ -511,6 +511,7 @@ if __name__ == '__main__':
                 'password': 'qwert12345'
             }
         },
+        {'uri': 'https://maven.singular.net/'},
         {'uri': 'https://artifact.bytedance.com/repository/pangle/'},
         {'uri': 'https://maven.google.com/'},
         {'uri': 'https://dl.google.com/dl/android/maven2/'},
@@ -528,25 +529,10 @@ if __name__ == '__main__':
 
     storage = '.m'
     syncer = MavenSyncer(MavenHost(hosts=maven_hosts, store_dir=storage), sync_depe=False)
-    # syncer.sync('com.google.code.gson:gson:2.8.9')
-    # syncer.sync('com.github.Harbor2:emlibrary:v2.2.4')
-    # syncer.sync('org.greenrobot:eventbus:3.2.0')
-    # syncer.sync('com.airbnb.android:lottie:6.1.0')
-    # syncer.sync('jp.wasabeef:glide-transformations:4.3.0')
-    # syncer.sync('com.github.bumptech.glide:glide:4.15.1')
-    # syncer.sync('eu.davidea:flexible-adapter-ui:1.0.0')
-    # syncer.sync('eu.davidea:flexible-adapter:5.1.0')
-
-    syncer.sync('com.adjust.sdk:adjust-android_business-dy1:5.1.0')
-    # syncer.sync('com.adjust.signature:adjust-android-signature:3.35.0')
+    syncer.sync('com.google.firebase:firebase-analytics-unity:12.5.0')
 
     # printer = DependencyPrinter(MavenHost(hosts=maven_hosts, store_dir=storage))
     # printer.prints([
-    # 'com.google.code.gson:gson:2.8.9',
-    # 'com.github.Harbor2:emlibrary:v2.2.4',
-    # 'org.greenrobot:eventbus:3.2.0',
-    # 'com.airbnb.android:lottie:6.1.0',
-    # 'jp.wasabeef:glide-transformations:4.3.0',
-    # 'com.github.bumptech.glide:glide:4.15.1',
-    # 'eu.davidea:flexible-adapter:5.1.0',
-    # 'eu.davidea:flexible-adapter-ui:5.1.0'])
+    # 'com.google.code.gson:gson:2.8.9'])
+
+

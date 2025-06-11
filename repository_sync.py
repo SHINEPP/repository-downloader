@@ -529,7 +529,7 @@ if __name__ == '__main__':
 
     storage = '.m'
     syncer = MavenSyncer(MavenHost(hosts=maven_hosts, store_dir=storage), sync_depe=False)
-    syncer.sync('com.google.firebase:firebase-analytics-unity:12.5.0')
+    syncer.sync('com.security.ads.pangle.adapter:bigo:5.3.0.1')
 
     # printer = DependencyPrinter(MavenHost(hosts=maven_hosts, store_dir=storage))
     # printer.prints([

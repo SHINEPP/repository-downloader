@@ -64,10 +64,10 @@ def upload_aar():
     password = 'qwert12345'
 
     group_id = 'com.google.firebase'
-    artifact_id = 'firebase-analytics-unity'
+    artifact_id = 'firebase-app-unity'
     version = '12.5.0'
-    aar_file_path = '/Users/zhouzhenliang/Desktop/temp-game/firebase-analytics-unity-12.5.0.aar'
-    pom_file_path = '/Users/zhouzhenliang/Desktop/temp-game/firebase-analytics-unity-12.5.0.pom'
+    aar_file_path = '/Users/zhouzhenliang/Desktop/temp-game/firebase-app-unity-12.5.0.aar'
+    pom_file_path = '/Users/zhouzhenliang/Desktop/temp-game/firebase-app-unity-12.5.0.pom'
 
     artifact_file = open(aar_file_path, 'rb')
     pom_file = open(pom_file_path, 'rb')

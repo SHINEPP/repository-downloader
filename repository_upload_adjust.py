@@ -10,15 +10,15 @@ def upload_aar():
     password = 'qwert12345'
 
     group_id = 'com.adjust.sdk'
-    artifact_id = 'adjust-android'
-    version = '5.4.0-20250616-1'
+    artifact_id = 'adjust-android-dynamic'
+    version = '5.4.5'
     packaging = 'aar'
-    aar_file_path = '/Users/zhouzhenliang/Desktop/maven-adjust/com/adjust/sdk/adjust-android/5.4.0/adjust-android-5.4.0_out.aar'
+    aar_file_path = '/Users/zhouzhenliang/maven-local-tmp/temp/adjust-android-5.4.5_out.aar'
     dependencies = [
         {
             'groupId': 'com.adjust.signature',
             'artifactId': 'adjust-android-signature',
-            'version': '3.35.2',
+            'version': '3.61.0',
             'scope': 'compile'
         }
     ]
@@ -39,7 +39,7 @@ def upload_aar():
     }
 
     # 通过 HTTP POST 上传 AAR 文件
-    response = requests.post(repository_url, files=files, auth=HTTPBasicAuth(username, password))
+    response = requests.post(repository_url, files=files, auth=HTTPBasicAuth(username, password), verify=False)
     print(f'code: {response.status_code}, {response.text}')
 
 

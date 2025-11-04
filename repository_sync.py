@@ -29,7 +29,7 @@ def maven_download_file(host: dict, store_dir: str, relative_path: str) -> Respo
             if username and password:
                 auth = HTTPBasicAuth(username, password)
 
-    response = requests.get(os.path.join(host['uri'], relative_path), auth=auth)
+    response = requests.get(os.path.join(host['uri'], relative_path), auth=auth, verify=False)
     success = False
     if response.status_code == 200:
         local_path = os.path.join(store_dir, relative_path)
@@ -504,6 +504,7 @@ class DependencyPrinter:
 
 if __name__ == '__main__':
     maven_hosts = [
+        {'uri': 'https://jfrog.anythinktech.com/artifactory/overseas_sdk/'},
         {
             'uri': 'https://maven.cherrysoft.cn/repository/maven-releases/',
             'credentials': {
@@ -511,7 +512,7 @@ if __name__ == '__main__':
                 'password': 'qwert12345'
             }
         },
-        {'uri': 'https://maven.singular.net/'},
+        # {'uri': 'https://maven.singular.net/'},
         {'uri': 'https://artifact.bytedance.com/repository/pangle/'},
         {'uri': 'https://maven.google.com/'},
         {'uri': 'https://dl.google.com/dl/android/maven2/'},
@@ -519,7 +520,6 @@ if __name__ == '__main__':
         {'uri': 'https://jcenter.bintray.com/'},
         {'uri': 'https://jitpack.io/'},
         {'uri': 'https://maven.scijava.org/content/repositories/public/'},
-        {'uri': 'https://jfrog.anythinktech.com/artifactory/overseas_sdk/'},
         {'uri': 'https://dl-maven-android.mintegral.com/repository/mbridge_android_sdk_oversea/'},
         {'uri': 'https://maven.scijava.org/content/repositories/public/'},
         {'uri': 'https://maven.aliyun.com/repository/google/'},
@@ -529,10 +529,24 @@ if __name__ == '__main__':
 
     storage = '.m'
     syncer = MavenSyncer(MavenHost(hosts=maven_hosts, store_dir=storage), sync_depe=False)
-    syncer.sync('com.adjust.sdk:adjust-android:5.4.0-20250616-1')
+    # syncer.sync("com.thinkup.sdk:core-tpn:6.5.31")
+    #syncer.sync("com.thinkup.sdk:nativead-tpn:6.5.31")
+    # syncer.sync("com.thinkup.sdk:banner-tpn:6.5.31")
+    # syncer.sync("com.thinkup.sdk:interstitial-tpn:6.5.31")
+    # syncer.sync("com.thinkup.sdk:rewardedvideo-tpn:6.5.31")
+    # syncer.sync("com.thinkup.sdk:splash-tpn:6.5.31")
+    #
+    # syncer.sync("com.thinkup.sdk:adapter-tpn-vungle:6.5.31")
+    # syncer.sync("com.thinkup.sdk:adapter-tpn-bigo:6.5.31")
+    # syncer.sync("com.thinkup.sdk:adapter-tpn-facebook:6.5.31")
+    # syncer.sync("com.thinkup.sdk:adapter-tpn-inmobi:6.5.31")
+    # syncer.sync("com.thinkup.sdk:adapter-tpn-mintegral:6.5.31")
+    # syncer.sync("com.thinkup.sdk:adapter-tpn-fyber:6.5.31")
 
     # printer = DependencyPrinter(MavenHost(hosts=maven_hosts, store_dir=storage))
     # printer.prints([
     # 'com.google.code.gson:gson:2.8.9'])
 
+    # syncer.sync("com.pangle.global:ads-sdk-m:6.5.7.9")
 
+    syncer.sync("com.adjust.sdk:adjust-android-dynamic:5.4.5")

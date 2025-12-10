@@ -504,6 +504,7 @@ class DependencyPrinter:
 
 if __name__ == '__main__':
     maven_hosts = [
+        {'uri': 'https://maven.scijava.org/content/repositories/public/'},
         {'uri': 'https://jfrog.anythinktech.com/artifactory/overseas_sdk/'},
         {
             'uri': 'https://maven.cherrysoft.cn/repository/maven-releases/',
@@ -530,7 +531,7 @@ if __name__ == '__main__':
     storage = '.m'
     syncer = MavenSyncer(MavenHost(hosts=maven_hosts, store_dir=storage), sync_depe=False)
     # syncer.sync("com.thinkup.sdk:core-tpn:6.5.31")
-    #syncer.sync("com.thinkup.sdk:nativead-tpn:6.5.31")
+    # syncer.sync("com.thinkup.sdk:nativead-tpn:6.5.31")
     # syncer.sync("com.thinkup.sdk:banner-tpn:6.5.31")
     # syncer.sync("com.thinkup.sdk:interstitial-tpn:6.5.31")
     # syncer.sync("com.thinkup.sdk:rewardedvideo-tpn:6.5.31")
@@ -549,4 +550,4 @@ if __name__ == '__main__':
 
     # syncer.sync("com.pangle.global:ads-sdk-m:6.5.7.9")
 
-    syncer.sync("com.adjust.sdk:adjust-android-dynamic:5.4.5")
+    syncer.sync("com.adjust.sdk:adjust-android-v2:5.5.0")

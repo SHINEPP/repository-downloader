@@ -1,4 +1,5 @@
 import requests
+import urllib3
 from requests.auth import HTTPBasicAuth
 
 from repository_upload import create_maven_pom
@@ -10,22 +11,21 @@ def upload_aar():
     password = 'qwert12345'
 
     group_id = 'com.adjust.sdk'
-    artifact_id = 'adjust-android-dynamic'
-    version = '5.4.5'
+    artifact_id = 'adjust-android-v2'
+    version = '5.5.0'
     packaging = 'aar'
-    aar_file_path = '/Users/zhouzhenliang/maven-local-tmp/temp/adjust-android-5.4.5_out.aar'
+    aar_file_path = '/Users/zhouzhenliang/maven-local-tmp/temp/adjust-android-5.5.0_out.aar'
     dependencies = [
         {
             'groupId': 'com.adjust.signature',
             'artifactId': 'adjust-android-signature',
-            'version': '3.61.0',
+            'version': '3.62.0',
             'scope': 'compile'
         }
     ]
 
     artifact_file = open(aar_file_path, 'rb')
     pom_bytes = create_maven_pom(group_id, artifact_id, version, packaging, dependencies)
-    print(pom_bytes.decode())
 
     # 准备要上传的文件
     files = {
@@ -39,6 +39,7 @@ def upload_aar():
     }
 
     # 通过 HTTP POST 上传 AAR 文件
+    urllib3.disable_warnings()
     response = requests.post(repository_url, files=files, auth=HTTPBasicAuth(username, password), verify=False)
     print(f'code: {response.status_code}, {response.text}')
 
